@@ -10,18 +10,19 @@
 import wsl
 ########### PyQT5 imports ###########
 import sys
-from PyQt5.QtWidgets import QApplication , QMainWindow , QPushButton , QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLabel
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt
 ########### File imports ###########
 from lotusHub import UIHubWindow
 from lotusNotes import UINoteWindow
 
+
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
-        self.setGeometry(50, 50, 1600, 900)
-        self.setFixedSize(1600, 900)
+        self.setGeometry(50, 50, 800, 500)
+        # self.setFixedSize(1600, 900)
         self.startHubWindow()
 
     def startHubWindow(self):
