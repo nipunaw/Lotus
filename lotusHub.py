@@ -70,8 +70,8 @@ class UIHubWindow(QWidget):
         layout = QGridLayout()
 
         # remove black outline border
-        self.horizontalGroupBox.setFlat(True);
-        self.horizontalGroupBox.setStyleSheet("border:0;");
+        self.horizontalGroupBox.setFlat(True)
+        self.horizontalGroupBox.setStyleSheet("border:0;")
 
         # add buttons to layout
         layout.addWidget(self.new_note_button, 1, 0)

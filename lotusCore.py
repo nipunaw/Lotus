@@ -16,6 +16,7 @@ from PyQt5.QtCore import Qt
 ########### File imports ###########
 from lotusHub import UIHubWindow
 from lotusNotes import UINoteWindow
+from lotusCalender import UICalendarWindow
 
 
 class MainWindow(QMainWindow):
@@ -37,6 +38,7 @@ class MainWindow(QMainWindow):
 
         ########### Button handling ###########
         self.HubWindow.new_note_button.clicked.connect(self.startNoteWindow)
+        self.HubWindow.scheduled_notes_button.clicked.connect(self.startCalenderWindow)
         self.show()
 
     def startNoteWindow(self):
@@ -51,6 +53,20 @@ class MainWindow(QMainWindow):
 
         ########### Button handling ###########
         self.NoteWindow.go_back_button.clicked.connect(self.startHubWindow)
+        self.show()
+
+    def startCalenderWindow(self):
+        self.CalenderWindow = UICalendarWindow(self)
+        self.setWindowTitle("Scheduled Notes")
+        self.setCentralWidget(self.CalenderWindow)
+
+        ########### Background color ###########
+        p = self.CalanderWindow.palette()
+        p.setColor(self.CalanderWindow.backgroundRole(), Qt.white)
+        self.setPalette(p)
+
+        ########### Button handling ###########
+        self.CalanderWindow.go_back_button.clicked.connect(self.startHubWindow)
         self.show()
 
 def main():
