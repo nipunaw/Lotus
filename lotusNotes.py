@@ -37,21 +37,38 @@ class UINoteWindow(QWidget):
         # Handled by resizeEvent
         self.first_time = True
 
+        ########### Closing ###########
+        self.new_Strokes = False
+
         ########### Buttons ###########
-        self.clear_button_display()
-        self.eraser_button_display()
-        self.pen_button_display()
-        self.go_back_button = QPushButton('Return home', self)
-        self.go_back_button.move(50, 50)
+        # Handled by resizeEvent
+        self.home_button = QPushButton('Return home', self)
+
+    ########### Closing ###########
+
+    def closeEvent(self, event):
+        compare_canvas = QtGui.QPixmap(self.size().width(), self.size().height())
+        compare_canvas.fill(Qt.white)
+        compare_canvas_image = compare_canvas.toImage()
+        current_canvas_image = self.canvas.toImage()
+        if not current_canvas_image == compare_canvas_image:
+            self.save()
+
+    ########### Resizing ###########
 
     def resizeEvent(self, event):
         if self.first_time:
             self.canvas = QtGui.QPixmap(self.size().width(), self.size().height())
             self.canvas.fill(Qt.white)
+            self.home_button_display()
+            self.clear_button_display()
+            self.eraser_button_display()
+            self.pen_button_display()
             self.first_time = False
         else:
             newCanvas = self.canvas.scaled(self.size().width(), self.size().height())
             self.canvas = newCanvas
+
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
@@ -66,6 +83,7 @@ class UINoteWindow(QWidget):
         if event.buttons() and Qt.LeftButton and self.utensil_press:
             painter = QtGui.QPainter(self.canvas)
             if self.pen_utensil:
+                self.new_Strokes = True
                 painter.setPen(QtGui.QPen(self.brush_color, self.brush_size, self.brush_style))
             elif self.eraser_utensil:
                 painter.setPen(QtGui.QPen(Qt.white, self.brush_size, self.brush_style))
@@ -79,17 +97,22 @@ class UINoteWindow(QWidget):
             self.utensil_press = False
             
 
+    def home_button_display(self):
+        self.home_button.resize(100, 32)
+        self.home_button.move(self.size().width()-125, self.size().height() - 50)
+        self.home_button.setToolTip("Clear any writing")
+
     def clear_button_display(self):
         self.clear_button = QtWidgets.QPushButton("Clear All", self)
         self.clear_button.resize(100, 32)
-        self.clear_button.move(25, 850)
+        self.clear_button.move(25, self.size().height()-50)
         self.clear_button.setToolTip("Clear any writing")
         self.clear_button.clicked.connect(self.clear)
 
     def eraser_button_display(self):
         self.eraser_button = QtWidgets.QPushButton("Eraser", self)
         self.eraser_button.resize(100, 32)
-        self.eraser_button.move(150, 850)
+        self.eraser_button.move(150, self.size().height()-50)
         self.eraser_button.setToolTip("Erase any writing")
         self.eraser_button.clicked.connect(self.erase)
 
@@ -97,7 +120,7 @@ class UINoteWindow(QWidget):
         self.pen_button = QtWidgets.QPushButton("Pen", self)
         self.pen_button.setDisabled(self.pen_utensil) # In use by default
         self.pen_button.resize(100, 32)
-        self.pen_button.move(275, 850)
+        self.pen_button.move(275, self.size().height()-50)
         self.pen_button.setToolTip("Premiere writing utensil")
         self.pen_button.clicked.connect(self.pen)
 
@@ -123,7 +146,7 @@ class UINoteWindow(QWidget):
         self.eraser_button.setEnabled(True)
             
     def save(self):
-
+        self.new_Strokes = False
         file_path, _ = QtWidgets.QFileDialog.getSaveFileName(self,
                                                              "Save Notes", # Caption
                                                              "notes.jpg", # File-name, directory
