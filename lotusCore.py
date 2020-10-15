@@ -61,12 +61,12 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.CalenderWindow)
 
         ########### Background color ###########
-        p = self.CalanderWindow.palette()
-        p.setColor(self.CalanderWindow.backgroundRole(), Qt.white)
-        self.setPalette(p)
+        # p = self.CalanderWindow.palette()
+        # p.setColor(self.CalanderWindow.backgroundRole(), Qt.white)
+        # self.setPalette(p)
 
         ########### Button handling ###########
-        self.CalanderWindow.go_back_button.clicked.connect(self.startHubWindow)
+        # self.CalanderWindow.go_back_button.clicked.connect(self.startHubWindow)
         self.show()
 
 def main():
