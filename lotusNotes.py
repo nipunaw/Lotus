@@ -17,32 +17,69 @@ class UINoteWindow(QWidget):
         super(UINoteWindow, self).__init__(parent)
 
         ########### Writing parameters ###########
+        # General utensil parameters
         self.pen_utensil = True
         self.eraser_utensil = False
         self.utensil_press = False
-        self.brush_size = 3
-        self.brush_color = Qt.black
-        self.brush_style = Qt.SolidLine
-        self.lastPoint = QtCore.QPoint()
+        # Pen default parameters
+        self.pen_current = QtGui.QPen()
+        self.pen_brush_size = 4
+        self.pen_brush_color = Qt.black
+        self.pen_brush_style = Qt.SolidLine
+        self.pen_cap_style = Qt.RoundCap
+        self.pen_join_style = Qt.RoundJoin
+        self.pen_lastPoint = QtCore.QPoint()
+        self.pen_init_update()
+        # Eraser default parameters
+        self.eraser_current = QtGui.QPen()
+        self.eraser_brush_size = 4
+        self.eraser_brush_color = Qt.white
+        self.eraser_brush_style = Qt.SolidLine
+        self.eraser_cap_style = Qt.RoundCap
+        self.eraser_join_style = Qt.RoundJoin
+        self.eraser_lastPoint = QtCore.QPoint()
+        self.eraser_init_update()
 
         ########### Menu Bar ###########
         self.menu_bar = QtWidgets.QMenuBar(self)
         self.file_menu = self.menu_bar.addMenu("File")
         self.save_option = QtWidgets.QAction("Save", self)
-        self.save_option.setShortcut("Ctrl + S")
+        self.save_option.setShortcut("Ctrl+S")
+        self.save_as_option = QtWidgets.QAction("Save As", self)
+        self.save_as_option.setShortcut("F12")
         self.file_menu.addAction(self.save_option)
+        self.file_menu.addAction(self.save_as_option)
         self.save_option.triggered.connect(self.save)
+        self.save_as_option.triggered.connect(self.save_as)
 
         ########### Canvas color ###########
         # Handled by resizeEvent
         self.first_time = True
 
+        ########### Saving ###########
+        self.file_path = ""
+
         ########### Closing ###########
-        self.new_Strokes = False
+        self.new_strokes_since_save = False
 
         ########### Buttons ###########
         # Handled by resizeEvent
-        self.home_button = QPushButton('Return home', self)
+        self.home_button = QPushButton('Toggle home', self)
+
+    ########### Utensil initialization/updates ###########
+    def pen_init_update(self):
+        self.pen_current.setStyle(self.pen_brush_style)
+        self.pen_current.setWidth(self.pen_brush_size)
+        self.pen_current.setBrush(self.pen_brush_color)
+        self.pen_current.setCapStyle(self.pen_cap_style)
+        self.pen_current.setJoinStyle(self.pen_join_style)
+
+    def eraser_init_update(self):
+        self.eraser_current.setStyle(self.eraser_brush_style)
+        self.eraser_current.setWidth(self.eraser_brush_size)
+        self.eraser_current.setBrush(self.eraser_brush_color)
+        self.eraser_current.setCapStyle(self.eraser_cap_style)
+        self.eraser_current.setJoinStyle(self.eraser_join_style)
 
     ########### Closing ###########
 
@@ -52,7 +89,24 @@ class UINoteWindow(QWidget):
         compare_canvas_image = compare_canvas.toImage()
         current_canvas_image = self.canvas.toImage()
         if not current_canvas_image == compare_canvas_image:
-            self.save()
+            if self.new_strokes_since_save:
+                self.savePopup()
+
+    def savePopup(self):
+        save_prompt = QtWidgets.QDialog(self)
+        save_prompt.setWindowTitle("Save your changes?")
+        options = QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel
+        save_prompt.buttonBox = QtWidgets.QDialogButtonBox(options)
+        save_prompt.buttonBox.accepted.connect(self.acceptSave)
+        save_prompt.buttonBox.rejected.connect(save_prompt.reject)
+        save_prompt.layout = QtWidgets.QVBoxLayout()
+        save_prompt.layout.addWidget(save_prompt.buttonBox)
+        save_prompt.setLayout(save_prompt.layout)
+        save_prompt.exec_()
+
+    def acceptSave(self):
+        self.save()
+        self.deleteLater()
 
     ########### Resizing ###########
 
@@ -65,7 +119,7 @@ class UINoteWindow(QWidget):
             self.eraser_button_display()
             self.pen_button_display()
             self.first_time = False
-        else:
+        else: # Not reached
             newCanvas = self.canvas.scaled(self.size().width(), self.size().height())
             self.canvas = newCanvas
 
@@ -77,16 +131,25 @@ class UINoteWindow(QWidget):
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.utensil_press = True
+            painter = QtGui.QPainter(self.canvas)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            if self.pen_utensil:
+                self.new_strokes_since_save = True
+                painter.setPen(QtGui.QPen(self.pen_current))
+            elif self.eraser_utensil:
+                painter.setPen(QtGui.QPen(self.eraser_current))
+            painter.drawPoint(event.pos())
             self.lastPoint = event.pos()
+            self.update()
 
     def mouseMoveEvent(self, event):
         if event.buttons() and Qt.LeftButton and self.utensil_press:
             painter = QtGui.QPainter(self.canvas)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
             if self.pen_utensil:
-                self.new_Strokes = True
-                painter.setPen(QtGui.QPen(self.brush_color, self.brush_size, self.brush_style))
+                painter.setPen(QtGui.QPen(self.pen_current))
             elif self.eraser_utensil:
-                painter.setPen(QtGui.QPen(Qt.white, self.brush_size, self.brush_style))
+                painter.setPen(QtGui.QPen(self.eraser_current))
 
             painter.drawLine(self.lastPoint, event.pos())
             self.lastPoint = event.pos()
@@ -98,6 +161,7 @@ class UINoteWindow(QWidget):
             
 
     def home_button_display(self):
+        #self.home_button.setEnabled(False)
         self.home_button.resize(100, 32)
         self.home_button.move(self.size().width()-125, self.size().height() - 50)
         self.home_button.setToolTip("Clear any writing")
@@ -144,15 +208,25 @@ class UINoteWindow(QWidget):
         self.eraser_utensil = False
         self.pen_button.setDisabled(True)
         self.eraser_button.setEnabled(True)
-            
+
+    ########### Saving ###########
+
     def save(self):
-        self.new_Strokes = False
-        file_path, _ = QtWidgets.QFileDialog.getSaveFileName(self,
+        if self.file_path == "":
+            self.save_as()
+        else:
+            self.new_strokes_since_save = False
+            self.canvas.save(self.file_path)
+
+    def save_as(self):
+        self.new_strokes_since_save = False
+        self.file_path, _ = QtWidgets.QFileDialog.getSaveFileName(self,
                                                              "Save Notes", # Caption
                                                              "notes.jpg", # File-name, directory
-                                                             "canvass (*.png *.jpg)") # File types
+                                                             "JPG (*.jpg);;PNG (*.png)") # File types
         # Blank file path
-        if file_path == "":
+        if self.file_path == "":
             return
         # Saving canvas
-        self.canvas.save(file_path)
+        self.canvas.save(self.file_path)
+        self.setWindowTitle(self.file_path)
