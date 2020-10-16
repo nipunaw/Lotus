@@ -10,49 +10,147 @@
 import wsl
 ########### PyQT5 imports ###########
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLabel
+from PyQt5.QtWidgets import QApplication , QMainWindow , QPushButton , QWidget
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt
 ########### File imports ###########
 from lotusHub import UIHubWindow
 from lotusNotes import UINoteWindow
+from lotusPrevious import UIPreviousWindow
 from lotusCalender import UICalendarWindow
 
+QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) #enable highdpi scaling
+QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True) #use highdpi icons
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
-        self.setGeometry(50, 50, 800, 500)
-        # self.setFixedSize(1600, 900)
-        self.startHubWindow()
+        self.first_time = True
+        self.newNoteCount = 0
+        self.newNotes = []
+        self.initUI()
+        self.HubWindowSeparate()
 
-    def startHubWindow(self):
-        self.HubWindow = UIHubWindow(self)
-        self.setWindowTitle("Lotus Home")
-        self.setCentralWidget(self.HubWindow)
+        ###### Attempting to center (experimental) ######
+    def initUI(self):
+        screen = QtGui.QGuiApplication.screenAt(QtGui.QCursor().pos())
+        fg = self.frameGeometry()
+        fg.moveCenter(screen.geometry().center())
+        self.move(fg.topLeft())
+
+    def HubWindowSeparate(self):
+        if self.first_time:
+            self.first_time = False
+            self.HubWindow = UIHubWindow()
+            self.HubWindow.setFixedSize(800, 500)
+            self.HubWindow.setWindowTitle("Lotus Home")
+
+            ########### Background color ###########
+            p = self.HubWindow.palette()
+            p.setColor(self.HubWindow.backgroundRole(), QtGui.QColor(Qt.white))
+            self.HubWindow.setPalette(p)
+
+            ########### Button handling ###########
+            self.HubWindow.new_note_button.clicked.connect(lambda: self.NoteWindowSeparate(None))
+            self.HubWindow.schedule_button.clicked.connect(self.startCalenderWindow)
+            self.HubWindow.previous_notes_button.clicked.connect(self.startPreviousWindow)
+
+            self.HubWindow.show()
+        elif self.HubWindow.isHidden():
+            self.HubWindow.setHidden(False)
+        else:
+            self.HubWindow.setHidden(True)
+
+            # Switching focus doesn't work well in X11 apps
+
+            #print("Should switch focus")
+            #self.HubWindow.showNormal()
+            #self.HubWindow.raise_()
+            #self.HubWindow.activateWindow()
+            #self.HubWindow.setFocusPolicy(QtCore.Qt.StrongFocus)
+            #print(self.HubWindow.isActiveWindow())
+            #self.HubWindow.setWindowFlags(self.HubWindow.windowFlags() & QtCore.Qt.WindowStaysOnTopHint)  # set always on top flag, makes window disappear
+            #self.HubWindow.update() # makes window reappear, but it's ALWAYS on top
+            #self.HubWindow.setWindowFlags(self.HubWindow.windowFlags() & ~QtCore.Qt.WindowStaysOnTopHint)  # clear always on top flag, makes window disappear
+            #self.HubWindow.update()
+            #self.HubWindow.setFocus(True)
+            #self.HubWindow.setWindowState(self.HubWindow.windowState() & QtCore.Qt.WindowActive)
+            #self.activateWindow()
+            #self.raise_()
+
+
+    def NoteWindowSeparate(self, directory):
+        if directory is not None:
+            directory = directory[:-1]
+        self.newNotes.append(UINoteWindow(directory))
+        self.newNotes[self.newNoteCount].setFixedSize(1200, 600)
+        self.newNotes[self.newNoteCount].setWindowTitle("New Note " + str(self.newNoteCount + 1))
+        self.newNotes[self.newNoteCount].home_button.clicked.connect(self.HubWindowSeparate)
+        self.newNotes[self.newNoteCount].show()
+        self.newNoteCount += 1
+
+    # def startHubWindow(self):
+    #     self.HubWindow = UIHubWindow(self)
+    #     self.setFixedSize(800, 500)
+    #     self.setWindowTitle("Lotus Home")
+    #     self.setCentralWidget(self.HubWindow)
+    #
+    #     ########### Background color ###########
+    #     p = self.HubWindow.palette()
+    #     p.setColor(self.HubWindow.backgroundRole(), QtGui.QColor(Qt.white))
+    #     self.setPalette(p)
+    #
+    #     ########### Button handling ###########
+    #     self.HubWindow.new_note_button.clicked.connect(self.NoteWindowSeparate)
+    #     self.show()
+    #
+    # def startNoteWindow(self):
+    #     self.NoteWindow = UINoteWindow(self)
+    #     self.setFixedSize(1200, 600)
+    #     self.setWindowTitle("Lotus Notes")
+    #     self.setCentralWidget(self.NoteWindow)
+    #
+    #     ########### Background color ###########
+    #     p = self.NoteWindow.palette()
+    #     p.setColor(self.NoteWindow.backgroundRole(), Qt.white)
+    #     self.setPalette(p)
+    #
+    #     ########### Button handling ###########
+    #     self.NoteWindow.go_back_button.clicked.connect(self.HubWindowSeparate)
+    #
+    #     self.show()
+
+    # def startNoteWindow(self, directory):
+    #     if directory is not None:
+    #         directory = directory[:-1]
+    #     self.NoteWindow = UINoteWindow(self, directory)
+    #     self.setWindowTitle("Lotus Notes")
+    #     self.setCentralWidget(self.NoteWindow)
+    #
+    #     ########### Background color ###########
+    #     p = self.NoteWindow.palette()
+    #     p.setColor(self.NoteWindow.backgroundRole(), Qt.white)
+    #     self.setPalette(p)
+    #
+    #     ########### Button handling ###########
+    #     self.NoteWindow.go_back_button.clicked.connect(self.startHubWindow)
+    #     self.show()
+
+    def startPreviousWindow(self):
+        self.PreviousWindow = UIPreviousWindow(self)
+        self.setWindowTitle("Previous Notes")
+        self.setCentralWidget(self.PreviousWindow)
 
         ########### Background color ###########
-        p = self.HubWindow.palette()
-        p.setColor(self.HubWindow.backgroundRole(), QtGui.QColor("#34495e"))
+        p = self.PreviousWindow.palette()
+        p.setColor(self.PreviousWindow.backgroundRole(), Qt.white)
         self.setPalette(p)
 
         ########### Button handling ###########
-        self.HubWindow.new_note_button.clicked.connect(self.startNoteWindow)
-        self.HubWindow.scheduled_notes_button.clicked.connect(self.startCalenderWindow)
-        self.show()
+        for i in range(len(self.PreviousWindow.directories)):
+            self.PreviousWindow.buttons[self.PreviousWindow.directories[i]].clicked.connect(lambda: self.NoteWindowSeparate(
+                self.PreviousWindow.directories[i]))
 
-    def startNoteWindow(self):
-        self.NoteWindow = UINoteWindow(self)
-        self.setWindowTitle("Lotus Notes")
-        self.setCentralWidget(self.NoteWindow)
-
-        ########### Background color ###########
-        p = self.NoteWindow.palette()
-        p.setColor(self.NoteWindow.backgroundRole(), Qt.white)
-        self.setPalette(p)
-
-        ########### Button handling ###########
-        self.NoteWindow.go_back_button.clicked.connect(self.startHubWindow)
         self.show()
 
     def startCalenderWindow(self):
@@ -68,6 +166,7 @@ class MainWindow(QMainWindow):
         ########### Button handling ###########
         # self.CalanderWindow.go_back_button.clicked.connect(self.startHubWindow)
         self.show()
+
 
 def main():
     wsl.set_display_to_host()

@@ -14,9 +14,6 @@ class UICalendarWindow(QWidget):
     def __init__(self, parent=None):
         super(UICalendarWindow, self).__init__(parent)
 
-        # self.setObjectName("Form")
-        # self.resize(640, 480)
-
         #Schedule file creation/loading
         try:
             self.schedule_file = open(SCHEDULE_FILE_PATH)
@@ -29,8 +26,6 @@ class UICalendarWindow(QWidget):
             with open(SCHEDULE_FILE_PATH, "r") as self.schedule_file:
                 self.schedule = json.load(self.schedule_file)
             self.schedule_file.close()
-
-        print(self.schedule)
 
         self.widget = QtWidgets.QWidget(self)
         self.widget.setGeometry(QtCore.QRect(0, 0, 640, 480))
@@ -110,7 +105,6 @@ class UICalendarWindow(QWidget):
         if result:
             data = popup.get_data()
             self.schedule.append(data)
-            print("Data", self.schedule)
             with open(SCHEDULE_FILE_PATH, "w+") as self.schedule_file:
                 json.dump(self.schedule, self.schedule_file, indent=4, sort_keys=True)
             self.schedule_file.close()
@@ -194,7 +188,6 @@ class Popup(QDialog):
     def updateBlocks(self, value):
         old_blocks = self.blocks
         self.blocks = value
-        print(old_blocks, self.blocks)
         if self.blocks > old_blocks:
             #Change label of block 1
             if old_blocks == 1:
