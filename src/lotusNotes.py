@@ -17,10 +17,11 @@ import pytesseract
 DIRECTORY_FILE = "../data/directories.txt"
 
 class UINoteWindow(QWidget):
-    def __init__(self, directory, parent=None):
+    def __init__(self, directory : str, parent=None, scheduled=False):
         super(UINoteWindow, self).__init__(parent)
 
         self.directory = directory
+        self.scheduled = scheduled
 
         ########### Writing parameters ###########
         # General utensil parameters
@@ -52,7 +53,7 @@ class UINoteWindow(QWidget):
         self.template_menu = self.menu_bar.addMenu("Template")
         self.save_option = QtWidgets.QAction("Save", self)
         self.save_option.setShortcut("Ctrl+S")
-        self.save_as_option = QtWidgets.QAction("Save As", self)
+        self.save_as_option = QtWidgets.QAction("Save As" if not scheduled else "Export", self)
         self.save_as_option.setShortcut("F12")
         self.heading_option = QtWidgets.QAction("Add Heading", self)
         self.heading_option.setShortcut("Ctrl+H")
@@ -76,7 +77,8 @@ class UINoteWindow(QWidget):
         self.first_time = True
 
         ########### Saving ###########
-        self.file_path = ""
+        self.file_path = self.directory.split("/")[-1] if self.scheduled else ""
+        print(self.file_path)
 
         ########### Closing ###########
         self.new_strokes_since_save = False

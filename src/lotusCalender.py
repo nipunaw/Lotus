@@ -1,15 +1,17 @@
-import sys
-from getpass import getpass
-
-from PyQt5.QtGui import QPainter
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QDialogButtonBox, QVBoxLayout, QHBoxLayout, \
-    QDialog, QGridLayout, QGroupBox, QFormLayout, QTextEdit, QSpinBox, QDateTimeEdit, QLineEdit, QTimeEdit, QCheckBox, \
-    QRadioButton, QErrorMessage, QMessageBox, QLabel, QTableWidgetItem, QCalendarWidget
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from PyQt5.QtCore import Qt, QRect, QTime, QDate
 import json
+from pathlib import Path
+
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import Qt, QTime, QDate
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QPushButton, QWidget, QDialogButtonBox, QVBoxLayout, QHBoxLayout, \
+    QDialog, QFormLayout, QSpinBox, QDateTimeEdit, QLineEdit, QTimeEdit, QRadioButton, QMessageBox, QLabel, \
+    QCalendarWidget, QStackedWidget, QColorDialog
+from src.lotusNotes import UINoteWindow
+import os.path
 
 SCHEDULE_FILE_PATH = "../data/schedule.json"
+SCHEDULED_NOTES_DIRECTORY = "../data/"
 
 DAYS = ["M", "T", "W", "R", "F", "Sa", "Su"]
 
@@ -48,7 +50,9 @@ class UICalendarWindow(QWidget):
         for i in range(0, len(headers)):
             self.schedule_table.addWidget(QLabel(headers[i]), 0, i)
 
-        self.calendarWidget = ScheduleCalendar(self.schedule)
+        self.stackedWidget = QStackedWidget()
+        self.calendarWidget = ScheduleCalendar(self.schedule, self.stackedWidget)
+        self.stackedWidget.addWidget(self.calendarWidget)
 
         self.update_from_file()
 
@@ -70,7 +74,7 @@ class UICalendarWindow(QWidget):
 
         self.bottom_layout.addItem(add_schedule_button_spacer)
 
-        self.bottom_layout.addWidget(self.calendarWidget)
+        self.bottom_layout.addWidget(self.stackedWidget)
 
         self.main_layout.addLayout(self.bottom_layout)
 
@@ -106,25 +110,77 @@ class UICalendarWindow(QWidget):
             self.schedule_file.close()
             self.update_from_file()
 
+def isClassDate(cls, date : QDate):
+    start_date = QDate(cls["start"]["year"], cls["start"]["month"], cls["start"]["day"])
+    end_date = QDate(cls["end"]["year"], cls["end"]["month"], cls["end"]["day"])
+    if start_date <= date <= end_date:
+        for b in cls["blocks"]:
+            if b["day"] == DAYS[date.dayOfWeek() - 1]:
+                return True
+    return False
+
+def openClassNotesByDate(cls, date : QDate):
+    file_path = SCHEDULED_NOTES_DIRECTORY + "{}/{}/{}/{}.jpg".format(date.year(), date.month(), date.day(), cls["name"])
+
+    # noteWindow = UINoteWindow(file_path, scheduled=True)
+    noteWindow = UINoteWindow(file_path, scheduled=True)
+    noteWindow.show()
+    # noteWindow.show()
+    #
+    # if not os.path.isfile(file_path):
+    #     os.makedirs(file_path.replace("/{}.jpg".format(cls["name"]), ""), exist_ok=True)
+    #     # noteWindow.save()
+
+class DayViewer(QWidget):
+    def __init__(self, date : QDate, schedule):
+        super(QWidget, self).__init__()
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel(date.toString("Classes for MMMM d, yyyy")), 0, Qt.AlignTop)
+
+        for cls in schedule:
+            start_date = QDate(cls["start"]["year"], cls["start"]["month"], cls["start"]["day"])
+            end_date = QDate(cls["end"]["year"], cls["end"]["month"], cls["end"]["day"])
+            if start_date <= date <= end_date:
+                for b in cls["blocks"]:
+                    if b["day"] == DAYS[date.dayOfWeek() - 1]:
+                        # Class on this day
+                        button = QPushButton("{} {}".format(cls["name"], QTime(b["time"]["hour"], b["time"]["minute"]).toString("HH:mm AP")))
+                        button.clicked.connect(lambda: openClassNotesByDate(cls, date))
+                        layout.addWidget(button)
+
+        self.setLayout(layout)
+
+
 class ScheduleCalendar(QCalendarWidget):
-    def __init__(self, schedule : list):
+    def __init__(self, schedule : list, stack : QStackedWidget):
         super(ScheduleCalendar, self).__init__()
         self.schedule = schedule
+        self.activated.connect(self.openDayViewer)
+        self.stack = stack
 
     def updateSchedule(self, schedule):
         self.schedule = schedule
 
     def paintCell(self, painter, rect, date):
         super().paintCell(painter, rect, date)
+        blocks = []
         for cls in self.schedule:
-            start_date = QDate(cls["start"]["year"], cls["start"]["month"], cls["start"]["day"])
-            end_date = QDate(cls["end"]["year"], cls["end"]["month"], cls["end"]["day"])
-            if start_date <= date <= end_date:
+            if isClassDate(cls, date):
                 for b in cls["blocks"]:
                     if b["day"] == DAYS[date.dayOfWeek() - 1]:
-                        painter.setBrush(QtCore.Qt.red)
-                        painter.drawEllipse(rect.topLeft() + QtCore.QPoint(12, 7), 3, 3)
+                        blocks.append((cls["color"], b))
+        for color, b in blocks:
+            painter.setBrush(QColor(color["r"], color["g"], color["b"]))
+            ypos = (b["time"]["hour"] / 24) * (rect.height() - 12)
+            painter.drawEllipse(rect.topLeft() + QtCore.QPoint(12, ypos + 12), 3, 3)
 
+    def openDayViewer(self, date : QDate):
+        for cls in self.schedule:
+            if isClassDate(cls, date):
+                day_viewer = DayViewer(date, self.schedule)
+                self.stack.addWidget(day_viewer)
+                self.stack.setCurrentWidget(day_viewer)
+                break
 
 class DayPicker(QWidget):
     def __init__(self):
@@ -172,8 +228,8 @@ class Popup(QDialog):
 
         self.layout = QFormLayout()
 
-        #The amount of fields in the form that come before the block section (name and #blocks)
-        self.rows_before_blocks = 4
+        #The amount of fields in the form that come before the block section (name, #blocks, start, end date, color)
+        self.rows_before_blocks = 5
 
         #Class Title
         self.name_edit = QLineEdit()
@@ -186,6 +242,13 @@ class Popup(QDialog):
         self.end_date = QDateTimeEdit(QDate.currentDate())
         self.end_date.setDisplayFormat("MMM d yyyy")
         self.layout.addRow("End Date:" , self.end_date)
+
+        #Color
+        self.color_picker = QColorDialog()
+        self.color_button = QPushButton("Pick Color")
+        self.color_button.clicked.connect(self.color_picker.open)
+        self.color_picker.currentColorChanged.connect(self.updateColor)
+        self.layout.addRow("Color Code:", self.color_button)
 
         #Blocks
         self.blocks = 1
@@ -207,6 +270,11 @@ class Popup(QDialog):
 
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
+
+    def updateColor(self):
+        self.color_button.setStyleSheet("background-color: rgb({},{},{})".format(self.color_picker.currentColor().red(),
+                                                                                 self.color_picker.currentColor().green(),
+                                                                                 self.color_picker.currentColor().blue()))
 
     def updateBlocks(self, value):
         old_blocks = self.blocks
@@ -250,6 +318,11 @@ class Popup(QDialog):
                 "month": self.end_date.date().month(),
                 "year": self.end_date.date().year()
             },
+            "color": {
+                "r": self.color_picker.currentColor().red(),
+                "g": self.color_picker.currentColor().green(),
+                "b": self.color_picker.currentColor().blue(),
+            }
         }
         return data
 
