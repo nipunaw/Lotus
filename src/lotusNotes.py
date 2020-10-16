@@ -67,7 +67,7 @@ class UINoteWindow(QWidget):
         self.file_menu.addAction(self.open_option)
         self.open_option.triggered.connect(self.open)
         self.ocr_menu = self.menu_bar.addMenu("OCR")
-        self.find_ocr = QtWidgets.QAction("Find dot", self)
+        self.find_ocr = QtWidgets.QAction("Find Typed/Neat Text", self)
         self.ocr_menu.addAction(self.find_ocr)
         self.find_ocr.triggered.connect(self.ocr)
 
@@ -76,8 +76,9 @@ class UINoteWindow(QWidget):
         # Handled by resizeEvent
         self.first_time = True
 
-        ########### Saving ###########
+        ########### Saving/Opening ###########
         self.file_path = self.directory.split("/")[-1] if self.scheduled else ""
+        self.file_path_2 = ""
         print(self.file_path)
 
         ########### Closing ###########
@@ -114,20 +115,20 @@ class UINoteWindow(QWidget):
                 self.savePopup()
 
     def savePopup(self):
-        save_prompt = QtWidgets.QDialog(self)
-        save_prompt.setWindowTitle("Save your changes?")
+        self.save_prompt = QtWidgets.QDialog(self)
+        self.save_prompt.setWindowTitle("Save your changes?")
         options = QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel
-        save_prompt.buttonBox = QtWidgets.QDialogButtonBox(options)
-        save_prompt.buttonBox.accepted.connect(self.acceptSave)
-        save_prompt.buttonBox.rejected.connect(save_prompt.reject)
-        save_prompt.layout = QtWidgets.QVBoxLayout()
-        save_prompt.layout.addWidget(save_prompt.buttonBox)
-        save_prompt.setLayout(save_prompt.layout)
-        save_prompt.exec_()
+        self.save_prompt.buttonBox = QtWidgets.QDialogButtonBox(options)
+        self.save_prompt.buttonBox.accepted.connect(self.acceptSave)
+        self.save_prompt.buttonBox.rejected.connect(self.save_prompt.reject)
+        self.save_prompt.layout = QtWidgets.QVBoxLayout()
+        self.save_prompt.layout.addWidget(self.save_prompt.buttonBox)
+        self.save_prompt.setLayout(self.save_prompt.layout)
+        self.save_prompt.exec_()
 
     def acceptSave(self):
         self.save()
-        self.deleteLater()
+        self.save_prompt.deleteLater()
 
     ########### Resizing ###########
 
@@ -273,11 +274,27 @@ class UINoteWindow(QWidget):
         painter.drawText(10, 50, "Carlos Morales-Diaz")
         painter.drawText(10, 75, "October 14, 2020")
         painter.drawText(10, 100, "CIS4930")
+        self.new_strokes_since_save = True
         self.update()
 
     def open(self):
-        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home", "JPG (*.jpg);;PNG (*.png)")
-        self.open_directory(file_path)
+        if self.new_strokes_since_save:
+            self.savePopup()
+            self.file_path_2, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home", "JPG (*.jpg);;PNG (*.png)")
+            if self.file_path_2 == "":
+                return
+            self.file_path = self.file_path_2
+            self.open_directory(self.file_path)
+            self.setWindowTitle(self.file_path)
+
+        else:
+            self.file_path_2, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home",
+                                                                        "JPG (*.jpg);;PNG (*.png)")
+            if self.file_path_2 == "":
+                return
+            self.file_path = self.file_path_2
+            self.open_directory(self.file_path)
+            self.setWindowTitle(self.file_path)
 
     def open_directory(self, file_path):
         self.canvas = QtGui.QPixmap(file_path)
@@ -286,21 +303,25 @@ class UINoteWindow(QWidget):
         self.update()
 
     def ocr(self):
-        self.save()
-        ocr_findings = pytesseract.image_to_string(Image.open(self.file_path), config=" -c tessedit_char_whitelist=.")
-        ocr_count = 0
-        for c in ocr_findings:
-            if c == '.':
-                ocr_count = ocr_count + 1
-        ocr_prompt = QtWidgets.QDialog(self)
-        ocr_prompt.setWindowTitle("OCRs Found")
-        options = QtWidgets.QDialogButtonBox.Close
-        ocr_prompt.buttonBox = QtWidgets.QDialogButtonBox(options)
-        ocr_prompt.buttonBox.rejected.connect(ocr_prompt.reject)
-        ocr_prompt.layout = QtWidgets.QVBoxLayout()
-        label = QLabel(ocr_prompt)
-        label.setText("There are " + str(ocr_count) + " OCR dots on the canvas")
-        ocr_prompt.layout.addWidget(label)
-        ocr_prompt.layout.addWidget(ocr_prompt.buttonBox)
-        ocr_prompt.setLayout(ocr_prompt.layout)
-        ocr_prompt.exec_()
+        if self.new_strokes_since_save or self.file_path =="":
+            self.savePopup()
+        if not self.file_path == "":
+            ocr_findings = pytesseract.image_to_string(Image.open(self.file_path))
+            #ocr_count = 0
+            #for c in ocr_findings:
+            #    if c == '.':
+            #        ocr_count = ocr_count + 1
+            ocr_prompt = QtWidgets.QDialog(self)
+            ocr_prompt.setWindowTitle("Typed Characters found (OCR)")
+            options = QtWidgets.QDialogButtonBox.Close
+            ocr_prompt.buttonBox = QtWidgets.QDialogButtonBox(options)
+            ocr_prompt.buttonBox.rejected.connect(ocr_prompt.reject)
+            ocr_prompt.layout = QtWidgets.QVBoxLayout()
+            label = QLabel(ocr_prompt)
+            label.setText("Found: \n" + ocr_findings)
+            ocr_prompt.layout.addWidget(label)
+            ocr_prompt.layout.addWidget(ocr_prompt.buttonBox)
+            ocr_prompt.setLayout(ocr_prompt.layout)
+            ocr_prompt.exec_()
+        else:
+            return

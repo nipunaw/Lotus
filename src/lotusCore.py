@@ -22,6 +22,8 @@ from lotusCalender import UICalendarWindow
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) #enable highdpi scaling
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True) #use highdpi icons
 
+DIRECTORY_FILE = "../data/directories.txt"
+
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -151,7 +153,6 @@ class MainWindow(QMainWindow):
         ########### Button handling ###########
         # self.CalanderWindow.go_back_button.clicked.connect(self.startHubWindow)
         self.show()
-
 
 def main():
     wsl.set_display_to_host()
