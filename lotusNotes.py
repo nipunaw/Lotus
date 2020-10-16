@@ -47,14 +47,19 @@ class UINoteWindow(QWidget):
         ########### Menu Bar ###########
         self.menu_bar = QtWidgets.QMenuBar(self)
         self.file_menu = self.menu_bar.addMenu("File")
+        self.template_menu = self.menu_bar.addMenu("Template")
         self.save_option = QtWidgets.QAction("Save", self)
         self.save_option.setShortcut("Ctrl+S")
         self.save_as_option = QtWidgets.QAction("Save As", self)
         self.save_as_option.setShortcut("F12")
+        self.heading_option = QtWidgets.QAction("Add Heading", self)
+        self.heading_option.setShortcut("Ctrl+H")
         self.file_menu.addAction(self.save_option)
         self.file_menu.addAction(self.save_as_option)
+        self.template_menu.addAction(self.heading_option)
         self.save_option.triggered.connect(self.save)
         self.save_as_option.triggered.connect(self.save_as)
+        self.heading_option.triggered.connect(self.heading)
         self.open_option = QtWidgets.QAction("Open", self)
         self.file_menu.addAction(self.open_option)
         self.open_option.triggered.connect(self.open)
@@ -62,6 +67,7 @@ class UINoteWindow(QWidget):
         self.find_ocr = QtWidgets.QAction("Find dot", self)
         self.ocr_menu.addAction(self.find_ocr)
         self.find_ocr.triggered.connect(self.ocr)
+
 
         ########### Canvas color ###########
         # Handled by resizeEvent
@@ -232,7 +238,6 @@ class UINoteWindow(QWidget):
             self.canvas.save(self.file_path)
 
     def save_as(self):
-        self.new_strokes_since_save = False
         self.file_path, _ = QtWidgets.QFileDialog.getSaveFileName(self,
                                                              "Save Notes", # Caption
                                                              "notes.jpg", # File-name, directory
@@ -252,10 +257,19 @@ class UINoteWindow(QWidget):
         # Blank file path
         if self.file_path == "":
             return
+        self.new_strokes_since_save = False
         # Saving canvas
         self.canvas.save(self.file_path)
         self.setWindowTitle(self.file_path)
 
+    def heading(self):
+        painter = QtGui.QPainter(self.canvas)
+        arial_font = QtGui.QFont("Times", 20, QtGui.QFont.Bold)
+        painter.setFont(arial_font)
+        painter.drawText(10, 50, "Carlos Morales-Diaz")
+        painter.drawText(10, 75, "October 14, 2020")
+        painter.drawText(10, 100, "CIS4930")
+        self.update()
 
     def open(self):
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home", "JPG (*.jpg);;PNG (*.png)")
