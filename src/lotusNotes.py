@@ -7,10 +7,12 @@
 # Spencer Bass
 
 ########### PyQT5 imports ###########
+from PIL import Image
 import sys
-from PyQt5.QtWidgets import QApplication , QMainWindow , QPushButton , QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLabel
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt
+import pytesseract
 
 DIRECTORY_FILE = "../data/directories.txt"
 
@@ -63,6 +65,10 @@ class UINoteWindow(QWidget):
         self.open_option = QtWidgets.QAction("Open", self)
         self.file_menu.addAction(self.open_option)
         self.open_option.triggered.connect(self.open)
+        self.ocr_menu = self.menu_bar.addMenu("OCR")
+        self.find_ocr = QtWidgets.QAction("Find dot", self)
+        self.ocr_menu.addAction(self.find_ocr)
+        self.find_ocr.triggered.connect(self.ocr)
 
 
         ########### Canvas color ###########
@@ -266,6 +272,7 @@ class UINoteWindow(QWidget):
         painter.drawText(10, 75, "October 14, 2020")
         painter.drawText(10, 100, "CIS4930")
         self.update()
+
     def open(self):
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home", "JPG (*.jpg);;PNG (*.png)")
         self.open_directory(file_path)
@@ -275,3 +282,23 @@ class UINoteWindow(QWidget):
         newCanvas = self.canvas.scaled(self.size().width(), self.size().height())
         self.canvas = newCanvas
         self.update()
+
+    def ocr(self):
+        self.save()
+        ocr_findings = pytesseract.image_to_string(Image.open(self.file_path), config=" -c tessedit_char_whitelist=.")
+        ocr_count = 0
+        for c in ocr_findings:
+            if c == '.':
+                ocr_count = ocr_count + 1
+        ocr_prompt = QtWidgets.QDialog(self)
+        ocr_prompt.setWindowTitle("OCRs Found")
+        options = QtWidgets.QDialogButtonBox.Close
+        ocr_prompt.buttonBox = QtWidgets.QDialogButtonBox(options)
+        ocr_prompt.buttonBox.rejected.connect(ocr_prompt.reject)
+        ocr_prompt.layout = QtWidgets.QVBoxLayout()
+        label = QLabel(ocr_prompt)
+        label.setText("There are " + str(ocr_count) + " OCR dots on the canvas")
+        ocr_prompt.layout.addWidget(label)
+        ocr_prompt.layout.addWidget(ocr_prompt.buttonBox)
+        ocr_prompt.setLayout(ocr_prompt.layout)
+        ocr_prompt.exec_()
