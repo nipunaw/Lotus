@@ -8,7 +8,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt, QRect, QTime, QDate
 import json
 
-SCHEDULE_FILE_PATH = "schedule.json"
+SCHEDULE_FILE_PATH = "../data/schedule.json"
 
 class UICalendarWindow(QWidget):
     def __init__(self, parent=None):

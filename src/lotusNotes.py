@@ -12,6 +12,8 @@ from PyQt5.QtWidgets import QApplication , QMainWindow , QPushButton , QWidget
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt
 
+DIRECTORY_FILE = "../data/directories.txt"
+
 class UINoteWindow(QWidget):
     def __init__(self, directory, parent=None):
         super(UINoteWindow, self).__init__(parent)
@@ -237,15 +239,15 @@ class UINoteWindow(QWidget):
                                                              "notes.jpg", # File-name, directory
                                                              "JPG (*.jpg);;PNG (*.png)") # File types
 
-        with open("directories.txt", "a") as f:
+        with open(DIRECTORY_FILE, "a") as f:
             f.write(self.file_path + "\n")
         count = 0
-        for line in open("directories.txt"):
+        for line in open(DIRECTORY_FILE):
             count += 1
         if count == 7:
-            with open('directories.txt') as fin:
+            with open(DIRECTORY_FILE) as fin:
                 data = fin.read().splitlines(True)
-            with open('directories.txt', 'w') as fout:
+            with open(DIRECTORY_FILE, 'w') as fout:
                 fout.writelines(data[1:])
 
         # Blank file path

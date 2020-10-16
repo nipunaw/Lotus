@@ -18,14 +18,14 @@ class UIPreviousWindow(QWidget):
 
         ############ Lotus Logo ###########
         self.logo = QtWidgets.QLabel(self)
-        self.pixmap = QtGui.QPixmap('lotusAssets/lotusSmall.png')
+        self.pixmap = QtGui.QPixmap('assets/lotusSmall.png')
         self.logo.setPixmap(self.pixmap)
         self.logo.show()
 
         self.create_buttons()
 
     def create_buttons(self):
-        with open('directories.txt') as f:
+        with open('../data/directories.txt', "w+") as f:
             self.directories = f.readlines()
 
         self.buttons = {}
