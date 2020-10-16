@@ -16,6 +16,7 @@ from PyQt5.QtCore import Qt
 ########### File imports ###########
 from lotusHub import UIHubWindow
 from lotusNotes import UINoteWindow
+from lotusPrevious import UIPreviousWindow
 
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) #enable highdpi scaling
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True) #use highdpi icons
@@ -49,7 +50,8 @@ class MainWindow(QMainWindow):
             self.HubWindow.setPalette(p)
 
             ########### Button handling ###########
-            self.HubWindow.new_note_button.clicked.connect(self.NoteWindowSeparate)
+            self.HubWindow.new_note_button.clicked.connect(lambda: self.NoteWindowSeparate(None))
+            self.HubWindow.previous_notes_button.clicked.connect(self.startPreviousWindow)
 
             self.HubWindow.show()
         elif self.HubWindow.isHidden():
@@ -75,8 +77,10 @@ class MainWindow(QMainWindow):
             #self.raise_()
 
 
-    def NoteWindowSeparate(self):
-        self.newNotes.append(UINoteWindow())
+    def NoteWindowSeparate(self, directory):
+        if directory is not None:
+            directory = directory[:-1]
+        self.newNotes.append(UINoteWindow(directory))
         self.newNotes[self.newNoteCount].setFixedSize(1200, 600)
         self.newNotes[self.newNoteCount].setWindowTitle("New Note " + str(self.newNoteCount + 1))
         self.newNotes[self.newNoteCount].home_button.clicked.connect(self.HubWindowSeparate)
@@ -113,6 +117,40 @@ class MainWindow(QMainWindow):
     #     self.NoteWindow.go_back_button.clicked.connect(self.HubWindowSeparate)
     #
     #     self.show()
+
+    # def startNoteWindow(self, directory):
+    #     if directory is not None:
+    #         directory = directory[:-1]
+    #     self.NoteWindow = UINoteWindow(self, directory)
+    #     self.setWindowTitle("Lotus Notes")
+    #     self.setCentralWidget(self.NoteWindow)
+    #
+    #     ########### Background color ###########
+    #     p = self.NoteWindow.palette()
+    #     p.setColor(self.NoteWindow.backgroundRole(), Qt.white)
+    #     self.setPalette(p)
+    #
+    #     ########### Button handling ###########
+    #     self.NoteWindow.go_back_button.clicked.connect(self.startHubWindow)
+    #     self.show()
+
+    def startPreviousWindow(self):
+        self.PreviousWindow = UIPreviousWindow(self)
+        self.setWindowTitle("Previous Notes")
+        self.setCentralWidget(self.PreviousWindow)
+
+        ########### Background color ###########
+        p = self.PreviousWindow.palette()
+        p.setColor(self.PreviousWindow.backgroundRole(), Qt.white)
+        self.setPalette(p)
+
+        ########### Button handling ###########
+        for i in range(len(self.PreviousWindow.directories)):
+            self.PreviousWindow.buttons[self.PreviousWindow.directories[i]].clicked.connect(lambda: self.NoteWindowSeparate(
+                self.PreviousWindow.directories[i]))
+
+        self.show()
+
 
 def main():
     wsl.set_display_to_host()

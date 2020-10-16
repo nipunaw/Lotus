@@ -13,8 +13,10 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt
 
 class UINoteWindow(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, directory, parent=None):
         super(UINoteWindow, self).__init__(parent)
+
+        self.directory = directory
 
         ########### Writing parameters ###########
         # General utensil parameters
@@ -56,6 +58,10 @@ class UINoteWindow(QWidget):
         self.save_option.triggered.connect(self.save)
         self.save_as_option.triggered.connect(self.save_as)
         self.heading_option.triggered.connect(self.heading)
+        self.open_option = QtWidgets.QAction("Open", self)
+        self.file_menu.addAction(self.open_option)
+        self.open_option.triggered.connect(self.open)
+
 
         ########### Canvas color ###########
         # Handled by resizeEvent
@@ -124,6 +130,8 @@ class UINoteWindow(QWidget):
             self.eraser_button_display()
             self.pen_button_display()
             self.first_time = False
+            if self.directory is not None:
+                self.open_directory(self.directory)
         else: # Not reached
             newCanvas = self.canvas.scaled(self.size().width(), self.size().height())
             self.canvas = newCanvas
@@ -228,6 +236,18 @@ class UINoteWindow(QWidget):
                                                              "Save Notes", # Caption
                                                              "notes.jpg", # File-name, directory
                                                              "JPG (*.jpg);;PNG (*.png)") # File types
+
+        with open("directories.txt", "a") as f:
+            f.write(self.file_path + "\n")
+        count = 0
+        for line in open("directories.txt"):
+            count += 1
+        if count == 7:
+            with open('directories.txt') as fin:
+                data = fin.read().splitlines(True)
+            with open('directories.txt', 'w') as fout:
+                fout.writelines(data[1:])
+
         # Blank file path
         if self.file_path == "":
             return
@@ -243,4 +263,13 @@ class UINoteWindow(QWidget):
         painter.drawText(10, 50, "Carlos Morales-Diaz")
         painter.drawText(10, 75, "October 14, 2020")
         painter.drawText(10, 100, "CIS4930")
+        self.update()
+    def open(self):
+        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home", "JPG (*.jpg);;PNG (*.png)")
+        self.open_directory(file_path)
+
+    def open_directory(self, file_path):
+        self.canvas = QtGui.QPixmap(file_path)
+        newCanvas = self.canvas.scaled(self.size().width(), self.size().height())
+        self.canvas = newCanvas
         self.update()
