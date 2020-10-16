@@ -1,14 +1,17 @@
 import sys
 from getpass import getpass
 
+from PyQt5.QtGui import QPainter
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QDialogButtonBox, QVBoxLayout, QHBoxLayout, \
     QDialog, QGridLayout, QGroupBox, QFormLayout, QTextEdit, QSpinBox, QDateTimeEdit, QLineEdit, QTimeEdit, QCheckBox, \
-    QRadioButton, QErrorMessage, QMessageBox, QLabel, QTableWidgetItem
+    QRadioButton, QErrorMessage, QMessageBox, QLabel, QTableWidgetItem, QCalendarWidget
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt, QRect, QTime, QDate
 import json
 
 SCHEDULE_FILE_PATH = "../data/schedule.json"
+
+DAYS = ["M", "T", "W", "R", "F", "Sa", "Su"]
 
 class UICalendarWindow(QWidget):
     def __init__(self, parent=None):
@@ -29,29 +32,23 @@ class UICalendarWindow(QWidget):
 
         self.widget = QtWidgets.QWidget(self)
         self.widget.setGeometry(QtCore.QRect(0, 0, 640, 480))
-        self.widget.setObjectName("widget")
 
         self.main_layout = QtWidgets.QVBoxLayout(self.widget)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
-        self.main_layout.setObjectName("main_layout")
 
         self.setLayout(self.main_layout)
 
         self.bottom_layout = QtWidgets.QHBoxLayout()
-        self.bottom_layout.setObjectName("bottom_layout")
 
         self.bottom_left_layout = QtWidgets.QVBoxLayout()
-        self.bottom_left_layout.setObjectName("bottom_left_layout")
 
         self.schedule_table = QtWidgets.QGridLayout()
-        self.schedule_table.setObjectName("schedule_table")
 
         headers = ["Class", "Block(s)", "Actions"]
         for i in range(0, len(headers)):
             self.schedule_table.addWidget(QLabel(headers[i]), 0, i)
 
-        self.calendarWidget = QtWidgets.QCalendarWidget(self.widget)
-        self.calendarWidget.setObjectName("calendarWidget")
+        self.calendarWidget = ScheduleCalendar(self.schedule)
 
         self.update_from_file()
 
@@ -62,7 +59,6 @@ class UICalendarWindow(QWidget):
         self.bottom_left_layout.addItem(vertical_spacer)
 
         self.add_schedule_button = QtWidgets.QPushButton(self.widget)
-        self.add_schedule_button.setObjectName("add_schedule_button")
         self.add_schedule_button.setText("Add New Scheduled Notes")
         self.add_schedule_button.clicked.connect(self.addNotes)
 
@@ -73,7 +69,6 @@ class UICalendarWindow(QWidget):
         add_schedule_button_spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
 
         self.bottom_layout.addItem(add_schedule_button_spacer)
-
 
         self.bottom_layout.addWidget(self.calendarWidget)
 
@@ -86,6 +81,7 @@ class UICalendarWindow(QWidget):
         #Update table
         with open(SCHEDULE_FILE_PATH) as self.schedule_file:
             self.schedule = json.load(self.schedule_file)
+        self.calendarWidget.updateSchedule(self.schedule)
         for i in range(0, len(self.schedule)):
             cls = self.schedule[i]
             # Add name to table
@@ -110,13 +106,32 @@ class UICalendarWindow(QWidget):
             self.schedule_file.close()
             self.update_from_file()
 
+class ScheduleCalendar(QCalendarWidget):
+    def __init__(self, schedule : list):
+        super(ScheduleCalendar, self).__init__()
+        self.schedule = schedule
+
+    def updateSchedule(self, schedule):
+        self.schedule = schedule
+
+    def paintCell(self, painter, rect, date):
+        super().paintCell(painter, rect, date)
+        for cls in self.schedule:
+            start_date = QDate(cls["start"]["year"], cls["start"]["month"], cls["start"]["day"])
+            end_date = QDate(cls["end"]["year"], cls["end"]["month"], cls["end"]["day"])
+            if start_date <= date <= end_date:
+                for b in cls["blocks"]:
+                    if b["day"] == DAYS[date.dayOfWeek() - 1]:
+                        painter.setBrush(QtCore.Qt.red)
+                        painter.drawEllipse(rect.topLeft() + QtCore.QPoint(12, 7), 3, 3)
+
 
 class DayPicker(QWidget):
     def __init__(self):
         super(DayPicker, self).__init__()
         self.layout = QHBoxLayout()
         weekends = False
-        days = ["M", "T", "W", "R", "F", "Sa" if weekends else None, "Su" if weekends else None]
+        days = DAYS[0:len(DAYS) if weekends else 5]
         self.buttons = []
         for day in days:
             if day is not None:
@@ -158,11 +173,19 @@ class Popup(QDialog):
         self.layout = QFormLayout()
 
         #The amount of fields in the form that come before the block section (name and #blocks)
-        self.rows_before_blocks = 2
+        self.rows_before_blocks = 4
 
         #Class Title
         self.name_edit = QLineEdit()
         self.layout.addRow("Class Name:", self.name_edit)
+
+        #Class start and end dates
+        self.start_date = QDateTimeEdit(QDate.currentDate())
+        self.start_date.setDisplayFormat("MMM d yyyy")
+        self.layout.addRow("Start Date:", self.start_date)
+        self.end_date = QDateTimeEdit(QDate.currentDate())
+        self.end_date.setDisplayFormat("MMM d yyyy")
+        self.layout.addRow("End Date:" , self.end_date)
 
         #Blocks
         self.blocks = 1
@@ -217,6 +240,16 @@ class Popup(QDialog):
         data = {
             "name": self.get_name(),
             "blocks": block_data,
+            "start": {
+                "day": self.start_date.date().day(),
+                "month": self.start_date.date().month(),
+                "year": self.start_date.date().year()
+            },
+            "end": {
+                "day": self.end_date.date().day(),
+                "month": self.end_date.date().month(),
+                "year": self.end_date.date().year()
+            },
         }
         return data
 
@@ -229,6 +262,12 @@ class Popup(QDialog):
             self.name_edit.setFocus()
             return
         # TODO: Add checking for duplicate class names
+        elif self.start_date.date() >= self.end_date.date():
+            error = QMessageBox()
+            error.setText("End date cannot {} start date.".format("be equal to" if self.start_date.date() == self.end_date.date() else "come before"))
+            error.exec_()
+            self.end_date.setFocus()
+            return
         else:
             # Valid block times
             for row in range(self.rows_before_blocks, self.layout.rowCount() - 1):
@@ -239,8 +278,8 @@ class Popup(QDialog):
                     error = QMessageBox()
                     error.setText("Please select a valid day for {}.".format(block_name))
                     error.exec_()
+                    return
                 # Check for duplicate blocks
-                found_duplicate = False
                 for other in range(self.rows_before_blocks, self.layout.rowCount() - 1):
                     if row == other:
                         continue
@@ -248,13 +287,10 @@ class Popup(QDialog):
                     same_time = block_widget.get_time() == other_block_widget.get_time()
                     same_day = block_widget.day_picker.get_day() == other_block_widget.day_picker.get_day()
                     if same_time and same_day:
-                        found_duplicate = True
                         error = QMessageBox()
                         error.setText("Block {} and {} cannot have the same day and time.".format(row - self.rows_before_blocks + 1, other - self.rows_before_blocks + 1))
                         error.exec_()
-                        break
-                if found_duplicate:
-                    return
+                        return
         super(Popup, self).accept()
 
     def reject(self):
