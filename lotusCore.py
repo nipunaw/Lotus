@@ -102,21 +102,6 @@ class MainWindow(QMainWindow):
     #     self.HubWindow.new_note_button.clicked.connect(self.NoteWindowSeparate)
     #     self.show()
     #
-    # def startNoteWindow(self):
-    #     self.NoteWindow = UINoteWindow(self)
-    #     self.setFixedSize(1200, 600)
-    #     self.setWindowTitle("Lotus Notes")
-    #     self.setCentralWidget(self.NoteWindow)
-    #
-    #     ########### Background color ###########
-    #     p = self.NoteWindow.palette()
-    #     p.setColor(self.NoteWindow.backgroundRole(), Qt.white)
-    #     self.setPalette(p)
-    #
-    #     ########### Button handling ###########
-    #     self.NoteWindow.go_back_button.clicked.connect(self.HubWindowSeparate)
-    #
-    #     self.show()
 
     # def startNoteWindow(self, directory):
     #     if directory is not None:
