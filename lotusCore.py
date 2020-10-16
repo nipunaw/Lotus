@@ -136,7 +136,6 @@ class MainWindow(QMainWindow):
 
         self.show()
 
-
 def main():
     wsl.set_display_to_host()
     app = QApplication(sys.argv)
