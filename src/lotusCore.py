@@ -17,9 +17,12 @@ from PyQt5.QtCore import Qt
 from lotusHub import UIHubWindow
 from lotusNotes import UINoteWindow
 from lotusPrevious import UIPreviousWindow
+from lotusCalender import UICalendarWindow
 
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) #enable highdpi scaling
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True) #use highdpi icons
+
+DIRECTORY_FILE = "../data/directories.txt"
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -51,6 +54,7 @@ class MainWindow(QMainWindow):
 
             ########### Button handling ###########
             self.HubWindow.new_note_button.clicked.connect(lambda: self.NoteWindowSeparate(None))
+            self.HubWindow.schedule_button.clicked.connect(self.startCalenderWindow)
             self.HubWindow.previous_notes_button.clicked.connect(self.startPreviousWindow)
 
             self.HubWindow.show()
@@ -102,21 +106,6 @@ class MainWindow(QMainWindow):
     #     self.HubWindow.new_note_button.clicked.connect(self.NoteWindowSeparate)
     #     self.show()
     #
-    # def startNoteWindow(self):
-    #     self.NoteWindow = UINoteWindow(self)
-    #     self.setFixedSize(1200, 600)
-    #     self.setWindowTitle("Lotus Notes")
-    #     self.setCentralWidget(self.NoteWindow)
-    #
-    #     ########### Background color ###########
-    #     p = self.NoteWindow.palette()
-    #     p.setColor(self.NoteWindow.backgroundRole(), Qt.white)
-    #     self.setPalette(p)
-    #
-    #     ########### Button handling ###########
-    #     self.NoteWindow.go_back_button.clicked.connect(self.HubWindowSeparate)
-    #
-    #     self.show()
 
     # def startNoteWindow(self, directory):
     #     if directory is not None:
@@ -149,6 +138,20 @@ class MainWindow(QMainWindow):
             self.PreviousWindow.buttons[self.PreviousWindow.directories[i]].clicked.connect(lambda: self.NoteWindowSeparate(
                 self.PreviousWindow.directories[i]))
 
+        self.show()
+
+    def startCalenderWindow(self):
+        self.CalenderWindow = UICalendarWindow(self)
+        self.setWindowTitle("Scheduled Notes")
+        self.setCentralWidget(self.CalenderWindow)
+
+        ########### Background color ###########
+        # p = self.CalanderWindow.palette()
+        # p.setColor(self.CalanderWindow.backgroundRole(), Qt.white)
+        # self.setPalette(p)
+
+        ########### Button handling ###########
+        # self.CalanderWindow.go_back_button.clicked.connect(self.startHubWindow)
         self.show()
 
 

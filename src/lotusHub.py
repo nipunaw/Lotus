@@ -1,4 +1,4 @@
- # CIS 4930
+# CIS 4930
 ########### Contributors ###########
 # Nipuna Weerapperuma
 # Hannah Williams
@@ -21,7 +21,7 @@ class UIHubWindow(QWidget):
 
         ############ Lotus Logo ###########
         self.logo = QtWidgets.QLabel(self)
-        self.pixmap = QtGui.QPixmap('lotusAssets/lotus.png')
+        self.pixmap = QtGui.QPixmap('assets/lotus.png')
         self.logo.setPixmap(self.pixmap.scaled(300, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.logo.show()
 
@@ -38,24 +38,24 @@ class UIHubWindow(QWidget):
     #   QtWidgets.QPushButton.resizeEvent(self, event)
 
     def new_note_button_display(self):
-        self.new_note_button = CircleButton("lotusAssets/newNote.png","lotusAssets/newNoteDarker.png")
+        self.new_note_button = CircleButton("assets/newNote.png","assets/newNoteDarker.png")
         #self.new_note_button.setFixedSize(120, 120)
-        #self.new_note_button.setIcon(QtGui.QIcon('lotusAssets/newNote.png'))
+        #self.new_note_button.setIcon(QtGui.QIcon('assets/newNote.png'))
         #self.new_note_button.setIconSize(self.new_note_button.size())
         # self.new_note_button.setMask(QtGui.QRegion(self.new_note_button.rect(), QtGui.QRegion.Ellipse))
         #self.new_note_button.setStyleSheet("background-color: black")
 
     def schedule_button_display(self):
-        self.schedule_button = CircleButton("lotusAssets/schedule.png", "lotusAssets/scheduleDarker.png")
+        self.schedule_button = CircleButton("assets/schedule.png", "assets/scheduleDarker.png")
         #self.schedule_button.setFixedSize(120, 120)
-        #self.schedule_button.setIcon(QtGui.QIcon('lotusAssets/schedule.png'))
+        #self.schedule_button.setIcon(QtGui.QIcon('assets/schedule.png'))
         #self.schedule_button.setIconSize(self.schedule_button.size())
         #self.schedule_button.setStyleSheet("background-color: black; padding-left: 100px; padding-right: 100px; text-align: center")
 
     def previous_notes_button_display(self):
-        self.previous_notes_button = CircleButton("lotusAssets/previousNotes.png", "lotusAssets/previousNotesDarker.png")
+        self.previous_notes_button = CircleButton("assets/previousNotes.png", "assets/previousNotesDarker.png")
         #self.previous_notes_button.setFixedSize(120, 120)
-        #self.previous_notes_button.setIcon(QtGui.QIcon('lotusAssets/previousNotes.png'))
+        #self.previous_notes_button.setIcon(QtGui.QIcon('assets/previousNotes.png'))
         #self.previous_notes_button.setIconSize(self.previous_notes_button.size())
         #self.previous_notes_button.setStyleSheet("background-color: black")
 
@@ -103,7 +103,4 @@ class UIHubWindow(QWidget):
         self.windowLayout.addWidget(self.horizontalGroupBox)
         self.windowLayout.setAlignment(Qt.AlignHCenter)
         self.setLayout(self.windowLayout)
-
-
-
 
