@@ -105,8 +105,11 @@ class MainWindow(QMainWindow):
         self.newNotes.append(UINoteWindow(directory, scheduled=scheduled))
         self.newNotes[self.newNoteCount].setFixedSize(1200, 600)
         if directory:
-            cls_title = "{} - {} - Scheduled Notes".format(cls["name"], date.toString("MM/dd/yyyy"), cls)
-            self.newNotes[self.newNoteCount].setWindowTitle(cls_title if scheduled and cls is not None else directory)
+            if scheduled and cls is not None:
+                cls_title = "{} - {} - Scheduled Notes".format(cls["name"], date.toString("MM/dd/yyyy"), cls)
+                self.newNotes[self.newNoteCount].setWindowTitle(cls_title)
+            else:
+                self.newNotes[self.newNoteCount].setWindowTitle(directory)
         else:
             self.newNotes[self.newNoteCount].setWindowTitle("New Note " + str(self.newNoteCount + 1) if directory is None else directory)
         self.newNotes[self.newNoteCount].home_button.clicked.connect(self.HubWindowSeparate)
