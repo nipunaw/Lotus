@@ -100,15 +100,15 @@ class MainWindow(QMainWindow):
 
 
     def NoteWindowSeparate(self, directory, scheduled=False, cls=None, date=None):
-        if directory is not None and not scheduled:
-            directory = directory[:-1]
-        self.newNotes.append(UINoteWindow(directory, scheduled=scheduled))
+        window = UINoteWindow(directory, scheduled=scheduled)
+        self.newNotes.append(window)
         self.newNotes[self.newNoteCount].setFixedSize(1200, 600)
         if directory:
             if scheduled and cls is not None:
                 cls_title = "{} - {} - Scheduled Notes".format(cls["name"], date.toString("MM/dd/yyyy"), cls)
                 self.newNotes[self.newNoteCount].setWindowTitle(cls_title)
             else:
+                window.deleted_file.connect(self.PreviousWindow.delete_button)
                 self.newNotes[self.newNoteCount].setWindowTitle(directory)
         else:
             self.newNotes[self.newNoteCount].setWindowTitle("New Note " + str(self.newNoteCount + 1) if directory is None else directory)

@@ -11,9 +11,9 @@ import os
 
 from PIL import Image
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLabel
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLabel, QMessageBox
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 import json
 from datetime import date, datetime
 import pytesseract
@@ -23,6 +23,8 @@ DIRECTORY_FILE = "../data/directories.txt"
 CONFIG_FILE = "../data/config.ini"
 
 class UINoteWindow(QWidget):
+    deleted_file = pyqtSignal(str)
+
     def __init__(self, directory : str, parent=None, scheduled=False):
         super(UINoteWindow, self).__init__(parent)
 
@@ -279,7 +281,7 @@ class UINoteWindow(QWidget):
                     f.writelines(p + "\n" for p in paths)
             elif count < 7:
                 with open(DIRECTORY_FILE, "a") as f:
-                    f.writelines([self.file_path])
+                    f.writelines([self.file_path + "\n"])
         except Exception as e:
             with open(DIRECTORY_FILE, "w+") as f:
                 f.write(self.file_path + "\n")
@@ -404,10 +406,23 @@ class UINoteWindow(QWidget):
             self.setWindowTitle(self.file_path)
 
     def open_directory(self, file_path):
-        self.canvas = QtGui.QPixmap(file_path)
-        newCanvas = self.canvas.scaled(self.size().width(), self.size().height())
-        self.canvas = newCanvas
-        self.update()
+        if not os.path.isfile(file_path[:-1]):
+            error = QMessageBox()
+            error.setText("Error: file does not exist.")
+            error.exec_()
+            with open(DIRECTORY_FILE, "r") as f:
+                paths = f.read().splitlines()
+            if file_path[:-1] in paths:
+                paths.remove(file_path[:-1])
+                with open(DIRECTORY_FILE, "w") as f:
+                    f.writelines(p + "\n" for p in paths)
+            self.deleted_file.emit(file_path)
+            self.deleteLater()
+        else:
+            self.canvas = QtGui.QPixmap(file_path[:-1])
+            newCanvas = self.canvas.scaled(self.size().width(), self.size().height())
+            self.canvas = newCanvas
+            self.update()
 
     def ocr(self):
         if self.new_strokes_since_save or self.file_path =="":

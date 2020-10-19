@@ -31,6 +31,11 @@ class UIPreviousWindow(QWidget):
         #self.logo.show()
         self.create_buttons()
 
+    def delete_button(self, str):
+        for i in range(0, len(self.directories)):
+            b : QPushButton = self.buttons[self.directories[i]]
+            if b.text() == str:
+                b.hide()
 
     def create_buttons(self):
         f = open(DIRECTORY_FILE, "r")
