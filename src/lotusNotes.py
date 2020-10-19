@@ -100,9 +100,12 @@ class UINoteWindow(QWidget):
         self.home_button = QPushButton('Toggle home', self)
         self.font = QtGui.QFont("Times New Roman", 20, QtGui.QFont.Bold)
         self.title = QtWidgets.QLineEdit()
-        self.name = QtWidgets.QLineEdit()
+        config = configparser.ConfigParser()
+        config.read(CONFIG_FILE)
+        name = config['DEFAULT']['name']
+        self.name = QtWidgets.QLineEdit(name)
         self.course = QtWidgets.QComboBox()
-        self.add_date = False
+        self.add_date = True
 
     ########### Utensil initialization/updates ###########
     def pen_init_update(self):
@@ -314,18 +317,23 @@ class UINoteWindow(QWidget):
         config.read(CONFIG_FILE)
         name = config['DEFAULT']['name']
         name_edit.setText(name)
+        if self.name.text() != name:
+            name_edit.setText(self.name.text())
+        title_edit.setText(self.title.text())
         layout.addRow(self.tr("&Title:"), title_edit, )
         layout.addRow(self.tr("&Name:"), name_edit)
         time_checkbox = QtWidgets.QCheckBox("Add Date", self)
-        time_checkbox.setChecked(True)
+        time_checkbox.setChecked(self.add_date)
         dropdown = QtWidgets.QComboBox(self)
         for classes in name_classes:
             dropdown.addItem(classes)
         dropdown.addItem("---")
+        dropdown.setCurrentText(self.course.currentText())
         layout.addWidget(time_checkbox)
         layout.addRow(dropdown)
         self.title = title_edit
         self.name = name_edit
+
         add_button = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel)
         add_button.accepted.connect(
             lambda: self.accept_header(self.title, self.name, dropdown, time_checkbox, header_dialog))
@@ -354,24 +362,25 @@ class UINoteWindow(QWidget):
         rect = QtCore.QRect(8, 20, 750, 150)
         painter.fillRect(rect, Qt.white)
         painter.setFont(self.font)
+        font_size = self.font.pointSize()
         x = 0
         if len(title.text()) != 0:
-            painter.drawText(10, 50, title.text())
+            painter.drawText(10, 30 + font_size, title.text())
         else:
             x = -25
         if len(name.text()) != 0:
-            painter.drawText(10, 75 + x, name.text())
+            painter.drawText(10, 55 + font_size + x, name.text())
         else:
             x = x - 25
         painter.setPen(Qt.black)
         self.add_date = time_checkbox.isChecked()
         if self.add_date:
-            painter.drawText(10, 100 + x, date_str)
+            painter.drawText(10, 80 + font_size + x, date_str)
         else:
             x = x - 25
         self.course = course
         if course.currentText() != "---":
-            painter.drawText(10, 125 + x, course.currentText())
+            painter.drawText(10, 105 + font_size + x, course.currentText())
         dialog.close()
         self.update()
         return
