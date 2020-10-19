@@ -161,8 +161,7 @@ class MainWindow(QMainWindow):
 
         ########### Button handling ###########
         for i in range(len(self.PreviousWindow.directories)):
-            self.PreviousWindow.buttons[self.PreviousWindow.directories[i]].clicked.connect(lambda: self.NoteWindowSeparate(
-                self.PreviousWindow.directories[i]))
+            self.PreviousWindow.buttons[self.PreviousWindow.directories[i]].clicked.connect(lambda state, x=self.PreviousWindow.directories[i]: self.NoteWindowSeparate(x))
 
         self.show()
 
