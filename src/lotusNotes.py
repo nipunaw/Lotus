@@ -7,20 +7,27 @@
 # Spencer Bass
 
 ########### PyQT5 imports ###########
+import os
+
 from PIL import Image
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLabel
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt
+import json
+from datetime import date, datetime
 import pytesseract
+import configparser
 
 DIRECTORY_FILE = "../data/directories.txt"
+CONFIG_FILE = "../data/config.ini"
 
 class UINoteWindow(QWidget):
-    def __init__(self, directory, parent=None):
+    def __init__(self, directory : str, parent=None, scheduled=False):
         super(UINoteWindow, self).__init__(parent)
 
         self.directory = directory
+        self.scheduled = scheduled
 
         ########### Writing parameters ###########
         # General utensil parameters
@@ -50,23 +57,27 @@ class UINoteWindow(QWidget):
         self.menu_bar = QtWidgets.QMenuBar(self)
         self.file_menu = self.menu_bar.addMenu("File")
         self.template_menu = self.menu_bar.addMenu("Template")
+        self.settings_menu = self.menu_bar.addMenu("Settings")
         self.save_option = QtWidgets.QAction("Save", self)
         self.save_option.setShortcut("Ctrl+S")
-        self.save_as_option = QtWidgets.QAction("Save As", self)
+        self.save_as_option = QtWidgets.QAction("Save As" if not scheduled else "Export", self)
         self.save_as_option.setShortcut("F12")
-        self.heading_option = QtWidgets.QAction("Add Heading", self)
+        self.heading_option = QtWidgets.QAction("Add/Edit Heading", self)
         self.heading_option.setShortcut("Ctrl+H")
+        self.settings_option = QtWidgets.QAction("Font")
+        self.settings_menu.addAction(self.settings_option)
         self.file_menu.addAction(self.save_option)
         self.file_menu.addAction(self.save_as_option)
         self.template_menu.addAction(self.heading_option)
         self.save_option.triggered.connect(self.save)
         self.save_as_option.triggered.connect(self.save_as)
         self.heading_option.triggered.connect(self.heading)
+        self.settings_option.triggered.connect(self.settings)
         self.open_option = QtWidgets.QAction("Open", self)
         self.file_menu.addAction(self.open_option)
         self.open_option.triggered.connect(self.open)
         self.ocr_menu = self.menu_bar.addMenu("OCR")
-        self.find_ocr = QtWidgets.QAction("Find dot", self)
+        self.find_ocr = QtWidgets.QAction("Find Typed/Neat Text", self)
         self.ocr_menu.addAction(self.find_ocr)
         self.find_ocr.triggered.connect(self.ocr)
 
@@ -75,8 +86,9 @@ class UINoteWindow(QWidget):
         # Handled by resizeEvent
         self.first_time = True
 
-        ########### Saving ###########
-        self.file_path = ""
+        ########### Saving/Opening ###########
+        self.file_path = "" if not self.scheduled else directory
+        self.file_path_2 = ""
 
         ########### Closing ###########
         self.new_strokes_since_save = False
@@ -84,6 +96,11 @@ class UINoteWindow(QWidget):
         ########### Buttons ###########
         # Handled by resizeEvent
         self.home_button = QPushButton('Toggle home', self)
+        self.font = QtGui.QFont("Times New Roman", 20, QtGui.QFont.Bold)
+        self.title = QtWidgets.QLineEdit()
+        self.name = QtWidgets.QLineEdit()
+        self.course = QtWidgets.QComboBox()
+        self.add_date = False
 
     ########### Utensil initialization/updates ###########
     def pen_init_update(self):
@@ -112,20 +129,20 @@ class UINoteWindow(QWidget):
                 self.savePopup()
 
     def savePopup(self):
-        save_prompt = QtWidgets.QDialog(self)
-        save_prompt.setWindowTitle("Save your changes?")
+        self.save_prompt = QtWidgets.QDialog(self)
+        self.save_prompt.setWindowTitle("Save your changes?")
         options = QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel
-        save_prompt.buttonBox = QtWidgets.QDialogButtonBox(options)
-        save_prompt.buttonBox.accepted.connect(self.acceptSave)
-        save_prompt.buttonBox.rejected.connect(save_prompt.reject)
-        save_prompt.layout = QtWidgets.QVBoxLayout()
-        save_prompt.layout.addWidget(save_prompt.buttonBox)
-        save_prompt.setLayout(save_prompt.layout)
-        save_prompt.exec_()
+        self.save_prompt.buttonBox = QtWidgets.QDialogButtonBox(options)
+        self.save_prompt.buttonBox.accepted.connect(self.acceptSave)
+        self.save_prompt.buttonBox.rejected.connect(self.save_prompt.reject)
+        self.save_prompt.layout = QtWidgets.QVBoxLayout()
+        self.save_prompt.layout.addWidget(self.save_prompt.buttonBox)
+        self.save_prompt.setLayout(self.save_prompt.layout)
+        self.save_prompt.exec_()
 
     def acceptSave(self):
         self.save()
-        self.deleteLater()
+        self.save_prompt.deleteLater()
 
     ########### Resizing ###########
 
@@ -138,7 +155,7 @@ class UINoteWindow(QWidget):
             self.eraser_button_display()
             self.pen_button_display()
             self.first_time = False
-            if self.directory is not None:
+            if (self.directory is not None and not self.scheduled) or (self.directory is not None and self.scheduled and os.path.isfile(self.directory)):
                 self.open_directory(self.directory)
         else: # Not reached
             newCanvas = self.canvas.scaled(self.size().width(), self.size().height())
@@ -245,16 +262,27 @@ class UINoteWindow(QWidget):
                                                              "notes.jpg", # File-name, directory
                                                              "JPG (*.jpg);;PNG (*.png)") # File types
 
-        with open(DIRECTORY_FILE, "a") as f:
-            f.write(self.file_path + "\n")
-        count = 0
-        for line in open(DIRECTORY_FILE):
-            count += 1
-        if count == 7:
-            with open(DIRECTORY_FILE) as fin:
-                data = fin.read().splitlines(True)
-            with open(DIRECTORY_FILE, 'w') as fout:
-                fout.writelines(data[1:])
+        try:
+            #file exists
+            with open(DIRECTORY_FILE, "r") as f:
+                paths = f.read().splitlines()
+            count = len(paths)
+            if self.file_path in paths:
+                paths.remove(self.file_path)
+                paths.append(self.file_path)
+                with open(DIRECTORY_FILE, "w") as f:
+                    f.writelines(p + "\n" for p in paths)
+            elif count == 7 or (count > 7 and paths[8] == ""):
+                with open(DIRECTORY_FILE, "w") as f:
+                    paths = paths[0:6]
+                    paths.append(self.file_path)
+                    f.writelines(p + "\n" for p in paths)
+            elif count < 7:
+                with open(DIRECTORY_FILE, "a") as f:
+                    f.writelines([self.file_path])
+        except Exception as e:
+            with open(DIRECTORY_FILE, "w+") as f:
+                f.write(self.file_path + "\n")
 
         # Blank file path
         if self.file_path == "":
@@ -264,18 +292,116 @@ class UINoteWindow(QWidget):
         self.canvas.save(self.file_path)
         self.setWindowTitle(self.file_path)
 
+        ########### Heading ###########
+
     def heading(self):
-        painter = QtGui.QPainter(self.canvas)
-        arial_font = QtGui.QFont("Times", 20, QtGui.QFont.Bold)
-        painter.setFont(arial_font)
-        painter.drawText(10, 50, "Carlos Morales-Diaz")
-        painter.drawText(10, 75, "October 14, 2020")
-        painter.drawText(10, 100, "CIS4930")
+        try:
+            with open('../data/schedule.json') as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            data = []
+        name_classes = []
+        for b in data:
+            name_classes.append(b['name'])
+        header_dialog = QtWidgets.QDialog(self)
+        header_dialog.setWindowTitle("Add a header")
+        layout = QtWidgets.QFormLayout()
+        title_edit = QtWidgets.QLineEdit()
+        name_edit = QtWidgets.QLineEdit()
+        config = configparser.ConfigParser()
+        config.read(CONFIG_FILE)
+        name = config['DEFAULT']['name']
+        name_edit.setText(name)
+        layout.addRow(self.tr("&Title:"), title_edit, )
+        layout.addRow(self.tr("&Name:"), name_edit)
+        time_checkbox = QtWidgets.QCheckBox("Add Date", self)
+        time_checkbox.setChecked(True)
+        dropdown = QtWidgets.QComboBox(self)
+        for classes in name_classes:
+            dropdown.addItem(classes)
+        dropdown.addItem("---")
+        layout.addWidget(time_checkbox)
+        layout.addRow(dropdown)
+        self.title = title_edit
+        self.name = name_edit
+        add_button = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel)
+        add_button.accepted.connect(
+            lambda: self.accept_header(self.title, self.name, dropdown, time_checkbox, header_dialog))
+        add_button.rejected.connect(header_dialog.close)
+        add_button.setOrientation(Qt.Horizontal)
+        layout.addWidget(add_button)
+        header_dialog.setLayout(layout)
+        header_dialog.update()
+        header_dialog.show()
+        self.new_strokes_since_save = True
         self.update()
 
+    def accept_header(self, title, name, course, time_checkbox, dialog):
+        if len(title.text()) == 0 and len(name.text()) == 0 and course.currentText() == "---" and (not time_checkbox.isChecked()):
+            #prompt to add at least one field
+            error = QtWidgets.QMessageBox()
+            error.setText("Please fill out at least one entry.")
+            error.exec_()
+            return
+
+        today = date.today()
+        # time = datetime.now()
+        date_str = today.strftime("%B %d, %Y")
+        # time_str = time.strftime("%H:%M:%S")
+        painter = QtGui.QPainter(self.canvas)
+        rect = QtCore.QRect(8, 20, 750, 150)
+        painter.fillRect(rect, Qt.white)
+        painter.setFont(self.font)
+        x = 0
+        if len(title.text()) != 0:
+            painter.drawText(10, 50, title.text())
+        else:
+            x = -25
+        if len(name.text()) != 0:
+            painter.drawText(10, 75 + x, name.text())
+        else:
+            x = x - 25
+        painter.setPen(Qt.black)
+        self.add_date = time_checkbox.isChecked()
+        if self.add_date:
+            painter.drawText(10, 100 + x, date_str)
+        else:
+            x = x - 25
+        self.course = course
+        if course.currentText() != "---":
+            painter.drawText(10, 125 + x, course.currentText())
+        dialog.close()
+        self.update()
+        return
+
+    def settings(self):
+        arial_font = QtGui.QFont("Times New Roman", 20, QtGui.QFont.Bold)
+        font, ok = QtWidgets.QFontDialog.getFont(arial_font)
+        if ok:
+            self.font = font
+        dialog = QtWidgets.QDialog()
+        time_checkbox = QtWidgets.QCheckBox("", self)
+        time_checkbox.setChecked(self.add_date)
+        self.accept_header(self.title, self.name, self.course, time_checkbox, dialog)
+
     def open(self):
-        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home", "JPG (*.jpg);;PNG (*.png)")
-        self.open_directory(file_path)
+        if self.new_strokes_since_save:
+            self.savePopup()
+            self.file_path_2, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home", "JPG (*.jpg);;PNG (*.png)")
+            if self.file_path_2 == "":
+                return
+            self.file_path = self.file_path_2
+            self.open_directory(self.file_path)
+            self.setWindowTitle(self.file_path)
+
+        else:
+            self.file_path_2, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home",
+                                                                        "JPG (*.jpg);;PNG (*.png)")
+            if self.file_path_2 == "":
+                return
+            self.file_path = self.file_path_2
+            self.open_directory(self.file_path)
+            self.setWindowTitle(self.file_path)
 
     def open_directory(self, file_path):
         self.canvas = QtGui.QPixmap(file_path)

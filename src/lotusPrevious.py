@@ -33,10 +33,12 @@ class UIPreviousWindow(QWidget):
 
 
     def create_buttons(self):
-        f = open("../data/directories.txt", "r")
+        f = open(DIRECTORY_FILE, "r")
         self.directories = f.readlines()
         f.close()
         self.buttons = {}
         for i in range(len(self.directories)):
             self.buttons[self.directories[i]] = QPushButton(self.directories[i], self)
             self.buttons[self.directories[i]].move(63, i * 32 + 32)
+            self.buttons[self.directories[i]].move(63, i * 32 + 32)
+

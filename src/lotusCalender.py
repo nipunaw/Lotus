@@ -1,15 +1,18 @@
-import sys
-from getpass import getpass
-
-from PyQt5.QtGui import QPainter
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QDialogButtonBox, QVBoxLayout, QHBoxLayout, \
-    QDialog, QGridLayout, QGroupBox, QFormLayout, QTextEdit, QSpinBox, QDateTimeEdit, QLineEdit, QTimeEdit, QCheckBox, \
-    QRadioButton, QErrorMessage, QMessageBox, QLabel, QTableWidgetItem, QCalendarWidget
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from PyQt5.QtCore import Qt, QRect, QTime, QDate
 import json
+from pathlib import Path
+
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import Qt, QTime, QDate, pyqtSignal, QRect, QRectF
+from PyQt5.QtGui import QColor, QPolygon, QPen
+from PyQt5.QtWidgets import QPushButton, QWidget, QDialogButtonBox, QVBoxLayout, QHBoxLayout, \
+    QDialog, QFormLayout, QSpinBox, QDateTimeEdit, QLineEdit, QTimeEdit, QRadioButton, QMessageBox, QLabel, \
+    QCalendarWidget, QStackedWidget, QColorDialog
+
+from src.lotusNotes import UINoteWindow
+import os.path
 
 SCHEDULE_FILE_PATH = "../data/schedule.json"
+SCHEDULED_NOTES_DIRECTORY = "../data/"
 
 DAYS = ["M", "T", "W", "R", "F", "Sa", "Su"]
 
@@ -42,17 +45,15 @@ class UICalendarWindow(QWidget):
 
         self.bottom_left_layout = QtWidgets.QVBoxLayout()
 
-        self.schedule_table = QtWidgets.QGridLayout()
+        self.schedule_table = ScheduleTable()
 
-        headers = ["Class", "Block(s)", "Actions"]
-        for i in range(0, len(headers)):
-            self.schedule_table.addWidget(QLabel(headers[i]), 0, i)
-
-        self.calendarWidget = ScheduleCalendar(self.schedule)
+        self.stackedWidget = QStackedWidget()
+        self.calendarWidget = ScheduleCalendar(self.schedule, self.stackedWidget, parent=self)
+        self.stackedWidget.addWidget(self.calendarWidget)
 
         self.update_from_file()
 
-        self.bottom_left_layout.addLayout(self.schedule_table)
+        self.bottom_left_layout.addWidget(self.schedule_table)
 
         vertical_spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
 
@@ -70,7 +71,7 @@ class UICalendarWindow(QWidget):
 
         self.bottom_layout.addItem(add_schedule_button_spacer)
 
-        self.bottom_layout.addWidget(self.calendarWidget)
+        self.bottom_layout.addWidget(self.stackedWidget)
 
         self.main_layout.addLayout(self.bottom_layout)
 
@@ -82,18 +83,7 @@ class UICalendarWindow(QWidget):
         with open(SCHEDULE_FILE_PATH) as self.schedule_file:
             self.schedule = json.load(self.schedule_file)
         self.calendarWidget.updateSchedule(self.schedule)
-        for i in range(0, len(self.schedule)):
-            cls = self.schedule[i]
-            # Add name to table
-            self.schedule_table.addWidget(QLabel(cls["name"]), i + 1, 0)
-            # Add Blocks
-            block_string = ""
-            for j in range(0, len(cls["blocks"])):
-                b = cls["blocks"][j]
-                block_string += "{} {}{}".format(b["day"],
-                                                  QTime(b["time"]["hour"], b["time"]["minute"]).toString("hh:mm AP"),
-                                                  ", " if j != len(cls["blocks"]) - 1 else "")
-                self.schedule_table.addWidget(QLabel(block_string), i + 1, 1)
+        self.schedule_table.updateTable(self.schedule)
 
     def addNotes(self):
         popup = Popup()
@@ -106,25 +96,124 @@ class UICalendarWindow(QWidget):
             self.schedule_file.close()
             self.update_from_file()
 
-class ScheduleCalendar(QCalendarWidget):
-    def __init__(self, schedule : list):
-        super(ScheduleCalendar, self).__init__()
-        self.schedule = schedule
+class ScheduleTable(QWidget):
+    def __init__(self):
+        super(ScheduleTable, self).__init__()
+        self.layout = QtWidgets.QGridLayout()
 
-    def updateSchedule(self, schedule):
-        self.schedule = schedule
+        headers = ["Class", "Block(s)"]
+        for i in range(0, len(headers)):
+            self.layout.addWidget(QLabel(headers[i]), 0, i)
+        self.setLayout(self.layout)
 
-    def paintCell(self, painter, rect, date):
-        super().paintCell(painter, rect, date)
-        for cls in self.schedule:
+    def updateTable(self, schedule):
+        for i in range(0, len(schedule)):
+            cls = schedule[i]
+            # Add name to table
+            class_name = QPushButton(cls["name"])
+            class_name.setStyleSheet("background-color: rgb({},{},{})".format(cls["color"]["r"],
+                                                                              cls["color"]["g"],
+                                                                              cls["color"]["b"]))
+            class_name.clicked.connect(lambda state, x=cls: self.editClass(x))
+            print(cls["name"])
+            self.layout.addWidget(class_name, i + 1, 0)
+            # Add Blocks
+            block_string = ""
+            for j in range(0, len(cls["blocks"])):
+                b = cls["blocks"][j]
+                block_string += "{} {}{}".format(b["day"],
+                                                  QTime(b["time"]["hour"], b["time"]["minute"]).toString("hh:mm AP"),
+                                                  ", " if j != len(cls["blocks"]) - 1 else "")
+                self.layout.addWidget(QLabel(block_string), i + 1, 1)
+
+    def editClass(self, cls):
+        popup = Popup(cls=cls)
+        results = popup.exec_()
+        if results:
+            pass
+        pass
+
+
+def isClassDate(cls, date : QDate):
+    start_date = QDate(cls["start"]["year"], cls["start"]["month"], cls["start"]["day"])
+    end_date = QDate(cls["end"]["year"], cls["end"]["month"], cls["end"]["day"])
+    if start_date <= date <= end_date:
+        for b in cls["blocks"]:
+            if b["day"] == DAYS[date.dayOfWeek() - 1]:
+                return True
+    return False
+
+class DayViewer(QWidget):
+    back = pyqtSignal()
+
+    def __init__(self, date : QDate, schedule, parent=None):
+        super(QWidget, self).__init__()
+        layout = QVBoxLayout()
+        top_layout = QHBoxLayout()
+        back_button = QPushButton("Back")
+        back_button.clicked.connect(self.back.emit)
+        top_layout.addWidget(back_button, 0, Qt.AlignRight)
+
+        top_layout.addWidget(QLabel(date.toString("Classes for MMMM d, yyyy")), 0, Qt.AlignCenter)
+        layout.addLayout(top_layout)
+
+        self.buttons = []
+        for cls in schedule:
             start_date = QDate(cls["start"]["year"], cls["start"]["month"], cls["start"]["day"])
             end_date = QDate(cls["end"]["year"], cls["end"]["month"], cls["end"]["day"])
             if start_date <= date <= end_date:
                 for b in cls["blocks"]:
                     if b["day"] == DAYS[date.dayOfWeek() - 1]:
-                        painter.setBrush(QtCore.Qt.red)
-                        painter.drawEllipse(rect.topLeft() + QtCore.QPoint(12, 7), 3, 3)
+                        # Class on this day
+                        button = QPushButton("{} {}".format(cls["name"], QTime(b["time"]["hour"], b["time"]["minute"]).toString("HH:mm AP")))
+                        button.setStyleSheet("background-color: rgb({},{},{})".format(cls["color"]["r"],
+                                                                                      cls["color"]["g"],
+                                                                                      cls["color"]["b"]))
+                        self.buttons.append((button, cls, date))
+                        layout.addWidget(button)
 
+        self.setLayout(layout)
+
+class ScheduleCalendar(QCalendarWidget):
+    buttonsUpdated = pyqtSignal(list)
+
+    def __init__(self, schedule : list, stack : QStackedWidget, parent=None):
+        super(ScheduleCalendar, self).__init__()
+        self.schedule = schedule
+        self.activated.connect(self.openDayViewer)
+        self.stack = stack
+        self.setGridVisible(True)
+
+    def updateSchedule(self, schedule):
+        self.schedule = schedule
+
+    def paintCell(self, painter, rect, date):
+        blocks = []
+        for cls in self.schedule:
+            if isClassDate(cls, date):
+                for b in cls["blocks"]:
+                    if b["day"] == DAYS[date.dayOfWeek() - 1]:
+                        blocks.append((cls["color"], b))
+        blocks.sort(key = lambda x: x[1]["time"]["hour"])
+        for color, b in blocks:
+            painter.setBrush(QColor(color["r"], color["g"], color["b"]))
+            atop = rect.top() + ((blocks.index((color, b)) / len(blocks)) * (rect.height()))
+            height = rect.height() / len(blocks)
+            block_rect = QRectF(rect.left(), atop, rect.width(), height)
+            painter.setPen(Qt.NoPen)
+            painter.drawRect(block_rect)
+        painter.setPen(QPen())
+        painter.drawText(QRect(rect), Qt.TextSingleLine|Qt.AlignCenter, str(date.day()))
+
+    def openDayViewer(self, date : QDate):
+        for cls in self.schedule:
+            if isClassDate(cls, date):
+                self.day_viewer = DayViewer(date, self.schedule, parent=self)
+                self.day_viewer.back.connect(lambda: self.stack.removeWidget(self.day_viewer))
+                self.buttonsUpdated.emit(self.day_viewer.buttons)
+                self.stack.addWidget(self.day_viewer)
+                self.stack.setCurrentWidget(self.day_viewer)
+                break
 
 class DayPicker(QWidget):
     def __init__(self):
@@ -161,19 +250,28 @@ class ClassTimePicker(QWidget):
     def get_time(self):
         return self.time_selector.time()
 
+    def set_time(self, time):
+        self.time_selector.setTime(QTime(time["hour"], time["minute"]))
+
+    def set_day(self, day):
+        for b in self.day_picker.buttons:
+            if b.text() == day:
+                b.click()
+
     def is_valid(self):
         return self.day_picker.get_day() is not None
 
 class Popup(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, cls=None):
         super(Popup, self).__init__(parent)
-
-        self.setWindowTitle("Add New Scheduled Notes")
+        self.cls = cls
+        self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.setWindowTitle("Add New Scheduled Notes" if cls is None else "Edit {} Details".format(cls["name"]))
 
         self.layout = QFormLayout()
 
-        #The amount of fields in the form that come before the block section (name and #blocks)
-        self.rows_before_blocks = 4
+        #The amount of fields in the form that come before the block section (name, #blocks, start, end date, color)
+        self.rows_before_blocks = 5
 
         #Class Title
         self.name_edit = QLineEdit()
@@ -186,6 +284,13 @@ class Popup(QDialog):
         self.end_date = QDateTimeEdit(QDate.currentDate())
         self.end_date.setDisplayFormat("MMM d yyyy")
         self.layout.addRow("End Date:" , self.end_date)
+
+        #Color
+        self.color_picker = QColorDialog()
+        self.color_button = QPushButton("Pick Color")
+        self.color_button.clicked.connect(self.color_picker.open)
+        self.color_picker.currentColorChanged.connect(self.updateColor)
+        self.layout.addRow("Color Code:", self.color_button)
 
         #Blocks
         self.blocks = 1
@@ -208,18 +313,40 @@ class Popup(QDialog):
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
 
+        #Update Values if cls is defined
+        if cls:
+            self.name_edit.setText(cls["name"])
+            self.start_date.setDate(QDate(cls["start"]["year"], cls["start"]["month"], cls["start"]["day"]))
+            self.end_date.setDate(QDate(cls["end"]["year"], cls["end"]["month"], cls["end"]["day"]))
+            self.color_picker.setCurrentColor(QColor(cls["color"]["r"], cls["color"]["g"], cls["color"]["b"]))
+            spin_box.setValue(len(cls["blocks"]))
+            for i in range(0, len(cls["blocks"])):
+                w : ClassTimePicker = self.layout.itemAt(self.rows_before_blocks + i, QFormLayout.FieldRole).widget()
+                block = cls["blocks"][i]
+                w.set_day(block["day"])
+                w.set_time(block["time"])
+
+    def updateColor(self):
+        self.color_button.setStyleSheet("background-color: rgb({},{},{})".format(self.color_picker.currentColor().red(),
+                                                                                 self.color_picker.currentColor().green(),
+                                                                                 self.color_picker.currentColor().blue()))
+
     def updateBlocks(self, value):
         old_blocks = self.blocks
         self.blocks = value
+        rows = self.layout.rowCount()
         if self.blocks > old_blocks:
             #Change label of block 1
             if old_blocks == 1:
-                self.layout.itemAt(2, QFormLayout.LabelRole).widget().setText("Block 1 Time:")
-            self.layout.insertRow(self.blocks + (self.rows_before_blocks - 1), "Block {} Time:".format(self.blocks), ClassTimePicker())
+                self.layout.itemAt(self.rows_before_blocks, QFormLayout.LabelRole).widget().setText("Block 1 Time:")
+            for i in range(1, self.blocks - old_blocks + 1):
+                self.layout.insertRow(rows - 2 + i, "Block {} Time:".format(old_blocks + i), ClassTimePicker())
         elif self.blocks < old_blocks:
             if self.blocks == 1:
-                self.layout.itemAt(2, QFormLayout.LabelRole).widget().setText("Block Time:")
-            self.layout.removeRow(self.blocks + self.rows_before_blocks)
+                self.layout.itemAt(self.rows_before_blocks, QFormLayout.LabelRole).widget().setText("Block Time:")
+            rows = self.layout.rowCount()
+            for i in range(1, old_blocks - self.blocks + 1):
+                self.layout.removeRow(rows - (1 + i))
         self.resize(self.sizeHint())
 
     def get_name(self):
@@ -250,10 +377,21 @@ class Popup(QDialog):
                 "month": self.end_date.date().month(),
                 "year": self.end_date.date().year()
             },
+            "color": {
+                "r": self.color_picker.currentColor().red(),
+                "g": self.color_picker.currentColor().green(),
+                "b": self.color_picker.currentColor().blue(),
+            }
         }
         return data
 
     def accept(self):
+        # TODO: Allow for saving of edits
+        if self.cls is not None:
+            error = QMessageBox()
+            error.setText("Changes will not be saved because this feature is incomplete.")
+            error.exec_()
+            super(Popup, self).reject()
         # Valid name
         if len(self.get_name()) == 0:
             error = QMessageBox()
