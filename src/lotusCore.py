@@ -166,7 +166,7 @@ class MainWindow(QMainWindow):
 def main():
     wsl.set_display_to_host()
     app = QApplication(sys.argv)
-    os.mkdir("../data")
+    os.makedirs("../data", exist_ok=True)
     w = MainWindow()
     sys.exit(app.exec_())
 
