@@ -17,8 +17,10 @@ from PyQt5.QtCore import Qt
 import json
 from datetime import date, datetime
 import pytesseract
+import configparser
 
 DIRECTORY_FILE = "../data/directories.txt"
+CONFIG_FILE = "../data/config.ini"
 
 class UINoteWindow(QWidget):
     def __init__(self, directory : str, parent=None, scheduled=False):
@@ -306,6 +308,10 @@ class UINoteWindow(QWidget):
         layout = QtWidgets.QFormLayout()
         title_edit = QtWidgets.QLineEdit()
         name_edit = QtWidgets.QLineEdit()
+        config = configparser.ConfigParser()
+        config.read(CONFIG_FILE)
+        name = config['DEFAULT']['name']
+        name_edit.setText(name)
         layout.addRow(self.tr("&Title:"), title_edit, )
         layout.addRow(self.tr("&Name:"), name_edit)
         time_checkbox = QtWidgets.QCheckBox("Add Date", self)
@@ -331,10 +337,13 @@ class UINoteWindow(QWidget):
         self.update()
 
     def accept_header(self, title, name, course, time_checkbox, dialog):
-        # while title.text() == 0 and name.text() == 0 and course.currentText() == "---" and (not self.add_date):
-        #     #prompt to add at least one field
-        #     error = QtWidgets.QErrorMessage()
-        #     error.showMessage("Please fill at least one entry.")
+        if len(title.text()) == 0 and len(name.text()) == 0 and course.currentText() == "---" and (not time_checkbox.isChecked()):
+            #prompt to add at least one field
+            error = QtWidgets.QMessageBox()
+            error.setText("Please fill out at least one entry.")
+            error.exec_()
+            return
+
         today = date.today()
         # time = datetime.now()
         date_str = today.strftime("%B %d, %Y")
