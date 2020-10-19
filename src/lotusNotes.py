@@ -14,6 +14,8 @@ import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLabel
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt
+import json
+from datetime import date, datetime
 import pytesseract
 
 DIRECTORY_FILE = "../data/directories.txt"
@@ -53,18 +55,22 @@ class UINoteWindow(QWidget):
         self.menu_bar = QtWidgets.QMenuBar(self)
         self.file_menu = self.menu_bar.addMenu("File")
         self.template_menu = self.menu_bar.addMenu("Template")
+        self.settings_menu = self.menu_bar.addMenu("Settings")
         self.save_option = QtWidgets.QAction("Save", self)
         self.save_option.setShortcut("Ctrl+S")
         self.save_as_option = QtWidgets.QAction("Save As" if not scheduled else "Export", self)
         self.save_as_option.setShortcut("F12")
-        self.heading_option = QtWidgets.QAction("Add Heading", self)
+        self.heading_option = QtWidgets.QAction("Add/Edit Heading", self)
         self.heading_option.setShortcut("Ctrl+H")
+        self.settings_option = QtWidgets.QAction("Font")
+        self.settings_menu.addAction(self.settings_option)
         self.file_menu.addAction(self.save_option)
         self.file_menu.addAction(self.save_as_option)
         self.template_menu.addAction(self.heading_option)
         self.save_option.triggered.connect(self.save)
         self.save_as_option.triggered.connect(self.save_as)
         self.heading_option.triggered.connect(self.heading)
+        self.settings_option.triggered.connect(self.settings)
         self.open_option = QtWidgets.QAction("Open", self)
         self.file_menu.addAction(self.open_option)
         self.open_option.triggered.connect(self.open)
@@ -88,6 +94,11 @@ class UINoteWindow(QWidget):
         ########### Buttons ###########
         # Handled by resizeEvent
         self.home_button = QPushButton('Toggle home', self)
+        self.font = QtGui.QFont("Times New Roman", 20, QtGui.QFont.Bold)
+        self.title = QtWidgets.QLineEdit()
+        self.name = QtWidgets.QLineEdit()
+        self.course = QtWidgets.QComboBox()
+        self.add_date = False
 
     ########### Utensil initialization/updates ###########
     def pen_init_update(self):
@@ -279,15 +290,90 @@ class UINoteWindow(QWidget):
         self.canvas.save(self.file_path)
         self.setWindowTitle(self.file_path)
 
+        ########### Heading ###########
+
     def heading(self):
-        painter = QtGui.QPainter(self.canvas)
-        arial_font = QtGui.QFont("Times", 20, QtGui.QFont.Bold)
-        painter.setFont(arial_font)
-        painter.drawText(10, 50, "Carlos Morales-Diaz")
-        painter.drawText(10, 75, "October 14, 2020")
-        painter.drawText(10, 100, "CIS4930")
+        try:
+            with open('../data/schedule.json') as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            data = []
+        name_classes = []
+        for b in data:
+            name_classes.append(b['name'])
+        header_dialog = QtWidgets.QDialog(self)
+        header_dialog.setWindowTitle("Add a header")
+        layout = QtWidgets.QFormLayout()
+        title_edit = QtWidgets.QLineEdit()
+        name_edit = QtWidgets.QLineEdit()
+        layout.addRow(self.tr("&Title:"), title_edit, )
+        layout.addRow(self.tr("&Name:"), name_edit)
+        time_checkbox = QtWidgets.QCheckBox("Add Date", self)
+        time_checkbox.setChecked(True)
+        dropdown = QtWidgets.QComboBox(self)
+        for classes in name_classes:
+            dropdown.addItem(classes)
+        dropdown.addItem("---")
+        layout.addWidget(time_checkbox)
+        layout.addRow(dropdown)
+        self.title = title_edit
+        self.name = name_edit
+        add_button = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel)
+        add_button.accepted.connect(
+            lambda: self.accept_header(self.title, self.name, dropdown, time_checkbox, header_dialog))
+        add_button.rejected.connect(header_dialog.close)
+        add_button.setOrientation(Qt.Horizontal)
+        layout.addWidget(add_button)
+        header_dialog.setLayout(layout)
+        header_dialog.update()
+        header_dialog.show()
         self.new_strokes_since_save = True
         self.update()
+
+    def accept_header(self, title, name, course, time_checkbox, dialog):
+        # while title.text() == 0 and name.text() == 0 and course.currentText() == "---" and (not self.add_date):
+        #     #prompt to add at least one field
+        #     error = QtWidgets.QErrorMessage()
+        #     error.showMessage("Please fill at least one entry.")
+        today = date.today()
+        # time = datetime.now()
+        date_str = today.strftime("%B %d, %Y")
+        # time_str = time.strftime("%H:%M:%S")
+        painter = QtGui.QPainter(self.canvas)
+        rect = QtCore.QRect(8, 20, 750, 150)
+        painter.fillRect(rect, Qt.white)
+        painter.setFont(self.font)
+        x = 0
+        if len(title.text()) != 0:
+            painter.drawText(10, 50, title.text())
+        else:
+            x = -25
+        if len(name.text()) != 0:
+            painter.drawText(10, 75 + x, name.text())
+        else:
+            x = x - 25
+        painter.setPen(Qt.black)
+        self.add_date = time_checkbox.isChecked()
+        if self.add_date:
+            painter.drawText(10, 100 + x, date_str)
+        else:
+            x = x - 25
+        self.course = course
+        if course.currentText() != "---":
+            painter.drawText(10, 125 + x, course.currentText())
+        dialog.close()
+        self.update()
+        return
+
+    def settings(self):
+        arial_font = QtGui.QFont("Times New Roman", 20, QtGui.QFont.Bold)
+        font, ok = QtWidgets.QFontDialog.getFont(arial_font)
+        if ok:
+            self.font = font
+        dialog = QtWidgets.QDialog()
+        time_checkbox = QtWidgets.QCheckBox("", self)
+        time_checkbox.setChecked(self.add_date)
+        self.accept_header(self.title, self.name, self.course, time_checkbox, dialog)
 
     def open(self):
         if self.new_strokes_since_save:
