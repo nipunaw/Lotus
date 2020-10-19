@@ -388,6 +388,9 @@ class Popup(QDialog):
     def accept(self):
         # TODO: Allow for saving of edits
         if self.cls is not None:
+            error = QMessageBox()
+            error.setText("Changes will not be saved because this feature is incomplete.")
+            error.exec_()
             super(Popup, self).reject()
         # Valid name
         if len(self.get_name()) == 0:
