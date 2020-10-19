@@ -84,12 +84,16 @@ class MainWindow(QMainWindow):
             #self.raise_()
 
 
-    def NoteWindowSeparate(self, directory, scheduled=False):
-        if directory is not None:
+    def NoteWindowSeparate(self, directory, scheduled=False, cls=None, date=None):
+        if directory is not None and not scheduled:
             directory = directory[:-1]
         self.newNotes.append(UINoteWindow(directory, scheduled=scheduled))
         self.newNotes[self.newNoteCount].setFixedSize(1200, 600)
-        self.newNotes[self.newNoteCount].setWindowTitle("New Note " + str(self.newNoteCount + 1) if directory is None else directory)
+        if directory:
+            cls_title = "{} - {} - Scheduled Notes".format(cls["name"], date.toString("MM/dd/yyyy"), cls)
+            self.newNotes[self.newNoteCount].setWindowTitle(cls_title if scheduled and cls is not None else directory)
+        else:
+            self.newNotes[self.newNoteCount].setWindowTitle("New Note " + str(self.newNoteCount + 1) if directory is None else directory)
         self.newNotes[self.newNoteCount].home_button.clicked.connect(self.HubWindowSeparate)
         self.newNotes[self.newNoteCount].show()
         self.newNoteCount += 1
@@ -148,7 +152,7 @@ class MainWindow(QMainWindow):
             file_path = SCHEDULED_NOTES_DIRECTORY + "{}/{}/{}/{}.jpg".format(date.year(), date.month(), date.day(), cls["name"])
             if not os.path.isfile(file_path):
                 os.makedirs(file_path.replace("/{}.jpg".format(cls["name"]), ""), exist_ok=True)
-            button.clicked.connect(lambda: self.NoteWindowSeparate(file_path, scheduled=True))
+            button.clicked.connect(lambda state, x=file_path, y=cls, z=date: self.NoteWindowSeparate(x, scheduled=True, cls=y, date=z))
 
     def startCalenderWindow(self):
         self.CalenderWindow = UICalendarWindow(parent=self)
@@ -162,6 +166,7 @@ class MainWindow(QMainWindow):
 def main():
     wsl.set_display_to_host()
     app = QApplication(sys.argv)
+    os.mkdir("../data")
     w = MainWindow()
     sys.exit(app.exec_())
 

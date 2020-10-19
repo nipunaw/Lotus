@@ -79,7 +79,7 @@ class UINoteWindow(QWidget):
         self.first_time = True
 
         ########### Saving/Opening ###########
-        self.file_path = ""
+        self.file_path = "" if not self.scheduled else directory
         self.file_path_2 = ""
 
         ########### Closing ###########
