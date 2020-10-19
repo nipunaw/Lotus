@@ -19,8 +19,11 @@ class UIPreviousWindow(QWidget):
     def __init__(self, parent=None):
         super(UIPreviousWindow, self).__init__(parent)
         # Creates file if not created
-        f = open("../data/directories.txt", "w")
-        f.close()
+        try:
+            file = open(DIRECTORY_FILE, 'r')
+        except IOError:
+            file = open(DIRECTORY_FILE, 'w')
+        file.close()
         ############ Lotus Logo ###########
         self.logo = QtWidgets.QLabel(self)
         self.pixmap = QtGui.QPixmap('assets/lotusSmall.png')
@@ -30,7 +33,7 @@ class UIPreviousWindow(QWidget):
 
 
     def create_buttons(self):
-        f = open("../data/directories.txt")
+        f = open(DIRECTORY_FILE)
         self.directories = f.readlines()
         f.close()
         self.buttons = {}

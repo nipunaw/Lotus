@@ -2,11 +2,12 @@ import json
 from pathlib import Path
 
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import Qt, QTime, QDate
+from PyQt5.QtCore import Qt, QTime, QDate, pyqtSignal
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QPushButton, QWidget, QDialogButtonBox, QVBoxLayout, QHBoxLayout, \
     QDialog, QFormLayout, QSpinBox, QDateTimeEdit, QLineEdit, QTimeEdit, QRadioButton, QMessageBox, QLabel, \
     QCalendarWidget, QStackedWidget, QColorDialog
+
 from src.lotusNotes import UINoteWindow
 import os.path
 
@@ -51,7 +52,7 @@ class UICalendarWindow(QWidget):
             self.schedule_table.addWidget(QLabel(headers[i]), 0, i)
 
         self.stackedWidget = QStackedWidget()
-        self.calendarWidget = ScheduleCalendar(self.schedule, self.stackedWidget)
+        self.calendarWidget = ScheduleCalendar(self.schedule, self.stackedWidget, parent=self)
         self.stackedWidget.addWidget(self.calendarWidget)
 
         self.update_from_file()
@@ -119,24 +120,13 @@ def isClassDate(cls, date : QDate):
                 return True
     return False
 
-def openClassNotesByDate(cls, date : QDate):
-    file_path = SCHEDULED_NOTES_DIRECTORY + "{}/{}/{}/{}.jpg".format(date.year(), date.month(), date.day(), cls["name"])
-
-    # noteWindow = UINoteWindow(file_path, scheduled=True)
-    noteWindow = UINoteWindow(file_path, scheduled=True)
-    noteWindow.show()
-    # noteWindow.show()
-    #
-    # if not os.path.isfile(file_path):
-    #     os.makedirs(file_path.replace("/{}.jpg".format(cls["name"]), ""), exist_ok=True)
-    #     # noteWindow.save()
-
 class DayViewer(QWidget):
-    def __init__(self, date : QDate, schedule):
+    def __init__(self, date : QDate, schedule, parent=None):
         super(QWidget, self).__init__()
         layout = QVBoxLayout()
         layout.addWidget(QLabel(date.toString("Classes for MMMM d, yyyy")), 0, Qt.AlignTop)
 
+        self.buttons = []
         for cls in schedule:
             start_date = QDate(cls["start"]["year"], cls["start"]["month"], cls["start"]["day"])
             end_date = QDate(cls["end"]["year"], cls["end"]["month"], cls["end"]["day"])
@@ -145,14 +135,15 @@ class DayViewer(QWidget):
                     if b["day"] == DAYS[date.dayOfWeek() - 1]:
                         # Class on this day
                         button = QPushButton("{} {}".format(cls["name"], QTime(b["time"]["hour"], b["time"]["minute"]).toString("HH:mm AP")))
-                        button.clicked.connect(lambda: openClassNotesByDate(cls, date))
+                        self.buttons.append((button, cls, date))
                         layout.addWidget(button)
 
         self.setLayout(layout)
 
-
 class ScheduleCalendar(QCalendarWidget):
-    def __init__(self, schedule : list, stack : QStackedWidget):
+    buttonsUpdated = pyqtSignal(list)
+
+    def __init__(self, schedule : list, stack : QStackedWidget, parent=None):
         super(ScheduleCalendar, self).__init__()
         self.schedule = schedule
         self.activated.connect(self.openDayViewer)
@@ -177,9 +168,10 @@ class ScheduleCalendar(QCalendarWidget):
     def openDayViewer(self, date : QDate):
         for cls in self.schedule:
             if isClassDate(cls, date):
-                day_viewer = DayViewer(date, self.schedule)
-                self.stack.addWidget(day_viewer)
-                self.stack.setCurrentWidget(day_viewer)
+                self.day_viewer = DayViewer(date, self.schedule, parent=self)
+                self.buttonsUpdated.emit(self.day_viewer.buttons)
+                self.stack.addWidget(self.day_viewer)
+                self.stack.setCurrentWidget(self.day_viewer)
                 break
 
 class DayPicker(QWidget):

@@ -7,6 +7,8 @@
 # Spencer Bass
 
 ########### PyQT5 imports ###########
+import os
+
 from PIL import Image
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLabel
@@ -77,9 +79,8 @@ class UINoteWindow(QWidget):
         self.first_time = True
 
         ########### Saving/Opening ###########
-        self.file_path = self.directory.split("/")[-1] if self.scheduled else ""
+        self.file_path = ""
         self.file_path_2 = ""
-        print(self.file_path)
 
         ########### Closing ###########
         self.new_strokes_since_save = False
@@ -141,7 +142,7 @@ class UINoteWindow(QWidget):
             self.eraser_button_display()
             self.pen_button_display()
             self.first_time = False
-            if self.directory is not None:
+            if (self.directory is not None and not self.scheduled) or (self.directory is not None and self.scheduled and os.path.isfile(self.directory)):
                 self.open_directory(self.directory)
         else: # Not reached
             newCanvas = self.canvas.scaled(self.size().width(), self.size().height())
@@ -248,16 +249,27 @@ class UINoteWindow(QWidget):
                                                              "notes.jpg", # File-name, directory
                                                              "JPG (*.jpg);;PNG (*.png)") # File types
 
-        with open(DIRECTORY_FILE, "a") as f:
-            f.write(self.file_path + "\n")
-        count = 0
-        for line in open(DIRECTORY_FILE):
-            count += 1
-        if count == 7:
-            with open(DIRECTORY_FILE) as fin:
-                data = fin.read().splitlines(True)
-            with open(DIRECTORY_FILE, 'w') as fout:
-                fout.writelines(data[1:])
+        try:
+            #file exists
+            with open(DIRECTORY_FILE, "r") as f:
+                paths = f.read().splitlines()
+            count = len(paths)
+            if self.file_path in paths:
+                paths.remove(self.file_path)
+                paths.append(self.file_path)
+                with open(DIRECTORY_FILE, "w") as f:
+                    f.writelines(p + "\n" for p in paths)
+            elif count == 7 or (count > 7 and paths[8] == ""):
+                with open(DIRECTORY_FILE, "w") as f:
+                    paths = paths[0:6]
+                    paths.append(self.file_path)
+                    f.writelines(p + "\n" for p in paths)
+            elif count < 7:
+                with open(DIRECTORY_FILE, "a") as f:
+                    f.writelines([self.file_path])
+        except Exception as e:
+            with open(DIRECTORY_FILE, "w+") as f:
+                f.write(self.file_path + "\n")
 
         # Blank file path
         if self.file_path == "":

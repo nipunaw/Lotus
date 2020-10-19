@@ -14,15 +14,18 @@ from PyQt5.QtWidgets import QApplication , QMainWindow , QPushButton , QWidget
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt
 ########### File imports ###########
-from lotusHub import UIHubWindow
-from lotusNotes import UINoteWindow
-from lotusPrevious import UIPreviousWindow
-from lotusCalender import UICalendarWindow
+from src.lotusHub import UIHubWindow
+from src.lotusNotes import UINoteWindow
+from src.lotusPrevious import UIPreviousWindow
+from src.lotusCalender import UICalendarWindow
+########### Other imports ###########
+import os
 
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) #enable highdpi scaling
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True) #use highdpi icons
 
 DIRECTORY_FILE = "../data/directories.txt"
+SCHEDULED_NOTES_DIRECTORY = "../data/"
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -81,12 +84,12 @@ class MainWindow(QMainWindow):
             #self.raise_()
 
 
-    def NoteWindowSeparate(self, directory):
+    def NoteWindowSeparate(self, directory, scheduled=False):
         if directory is not None:
             directory = directory[:-1]
-        self.newNotes.append(UINoteWindow(directory))
+        self.newNotes.append(UINoteWindow(directory, scheduled=scheduled))
         self.newNotes[self.newNoteCount].setFixedSize(1200, 600)
-        self.newNotes[self.newNoteCount].setWindowTitle("New Note " + str(self.newNoteCount + 1))
+        self.newNotes[self.newNoteCount].setWindowTitle("New Note " + str(self.newNoteCount + 1) if directory is None else directory)
         self.newNotes[self.newNoteCount].home_button.clicked.connect(self.HubWindowSeparate)
         self.newNotes[self.newNoteCount].show()
         self.newNoteCount += 1
@@ -140,16 +143,18 @@ class MainWindow(QMainWindow):
 
         self.show()
 
+    def connectCalendarWindowButtons(self, buttons : list):
+        for (button, cls, date) in buttons:
+            file_path = SCHEDULED_NOTES_DIRECTORY + "{}/{}/{}/{}.jpg".format(date.year(), date.month(), date.day(), cls["name"])
+            if not os.path.isfile(file_path):
+                os.makedirs(file_path.replace("/{}.jpg".format(cls["name"]), ""), exist_ok=True)
+            button.clicked.connect(lambda: self.NoteWindowSeparate(file_path, scheduled=True))
+
     def startCalenderWindow(self):
-        self.CalenderWindow = UICalendarWindow(self)
+        self.CalenderWindow = UICalendarWindow(parent=self)
         self.setWindowTitle("Scheduled Notes")
         self.setCentralWidget(self.CalenderWindow)
-
-        ########### Background color ###########
-        # p = self.CalanderWindow.palette()
-        # p.setColor(self.CalanderWindow.backgroundRole(), Qt.white)
-        # self.setPalette(p)
-
+        self.CalenderWindow.calendarWidget.buttonsUpdated.connect(self.connectCalendarWindowButtons)
         ########### Button handling ###########
         # self.CalanderWindow.go_back_button.clicked.connect(self.startHubWindow)
         self.show()
