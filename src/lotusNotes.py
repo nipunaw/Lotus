@@ -284,21 +284,25 @@ class UINoteWindow(QWidget):
         self.update()
 
     def ocr(self):
-        self.save()
-        ocr_findings = pytesseract.image_to_string(Image.open(self.file_path), config=" -c tessedit_char_whitelist=.")
-        ocr_count = 0
-        for c in ocr_findings:
-            if c == '.':
-                ocr_count = ocr_count + 1
-        ocr_prompt = QtWidgets.QDialog(self)
-        ocr_prompt.setWindowTitle("OCRs Found")
-        options = QtWidgets.QDialogButtonBox.Close
-        ocr_prompt.buttonBox = QtWidgets.QDialogButtonBox(options)
-        ocr_prompt.buttonBox.rejected.connect(ocr_prompt.reject)
-        ocr_prompt.layout = QtWidgets.QVBoxLayout()
-        label = QLabel(ocr_prompt)
-        label.setText("There are " + str(ocr_count) + " OCR dots on the canvas")
-        ocr_prompt.layout.addWidget(label)
-        ocr_prompt.layout.addWidget(ocr_prompt.buttonBox)
-        ocr_prompt.setLayout(ocr_prompt.layout)
-        ocr_prompt.exec_()
+        if self.new_strokes_since_save or self.file_path =="":
+            self.savePopup()
+        if not self.file_path == "":
+            ocr_findings = pytesseract.image_to_string(Image.open(self.file_path))
+            #ocr_count = 0
+            #for c in ocr_findings:
+            #    if c == '.':
+            #        ocr_count = ocr_count + 1
+            ocr_prompt = QtWidgets.QDialog(self)
+            ocr_prompt.setWindowTitle("Typed Characters found (OCR)")
+            options = QtWidgets.QDialogButtonBox.Close
+            ocr_prompt.buttonBox = QtWidgets.QDialogButtonBox(options)
+            ocr_prompt.buttonBox.rejected.connect(ocr_prompt.reject)
+            ocr_prompt.layout = QtWidgets.QVBoxLayout()
+            label = QLabel(ocr_prompt)
+            label.setText("Found: \n" + ocr_findings)
+            ocr_prompt.layout.addWidget(label)
+            ocr_prompt.layout.addWidget(ocr_prompt.buttonBox)
+            ocr_prompt.setLayout(ocr_prompt.layout)
+            ocr_prompt.exec_()
+        else:
+            return

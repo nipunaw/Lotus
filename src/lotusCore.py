@@ -18,13 +18,25 @@ from lotusHub import UIHubWindow
 from lotusNotes import UINoteWindow
 from lotusPrevious import UIPreviousWindow
 from lotusCalender import UICalendarWindow
+import configparser
 
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) #enable highdpi scaling
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True) #use highdpi icons
 
+CONFIG_FILE = "../data/config.ini"
+DIRECTORY_FILE = "../data/directories.txt"
+
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
+        try:
+            file = open(CONFIG_FILE, 'r')
+        except IOError:
+            file = open(CONFIG_FILE, 'w')
+            config = configparser.ConfigParser()
+            config['DEFAULT'] = {'Name': ''}
+            config.write(file)
+        file.close()
         self.first_time = True
         self.newNoteCount = 0
         self.newNotes = []
@@ -56,6 +68,7 @@ class MainWindow(QMainWindow):
             self.HubWindow.previous_notes_button.clicked.connect(self.startPreviousWindow)
 
             self.HubWindow.show()
+
         elif self.HubWindow.isHidden():
             self.HubWindow.setHidden(False)
         else:
@@ -125,6 +138,7 @@ class MainWindow(QMainWindow):
         self.PreviousWindow = UIPreviousWindow(self)
         self.setWindowTitle("Previous Notes")
         self.setCentralWidget(self.PreviousWindow)
+        self.PreviousWindow.setFixedSize(400, 400)
 
         ########### Background color ###########
         p = self.PreviousWindow.palette()
@@ -151,7 +165,6 @@ class MainWindow(QMainWindow):
         ########### Button handling ###########
         # self.CalanderWindow.go_back_button.clicked.connect(self.startHubWindow)
         self.show()
-
 
 def main():
     wsl.set_display_to_host()
