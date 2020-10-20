@@ -25,17 +25,9 @@ import os
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) #enable highdpi scaling
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True) #use highdpi icons
 
-#CONFIG_FILE = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/config.ini'))
-#SCHEDULE_FILE_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/schedule.json'))
-#SCHEDULED_NOTES_DIRECTORY = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/'))
-
 CONFIG_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/config.ini')
 SCHEDULE_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/schedule.json')
 SCHEDULED_NOTES_DIRECTORY = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/')
-print("lotusCore os.path.abspath(os.path.dirname( __file__ )")
-print(os.path.abspath(os.path.dirname( __file__ )))
-print("SCHEDULED_NOTES_DIRECTORY")
-print(SCHEDULED_NOTES_DIRECTORY)
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):

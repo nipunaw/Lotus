@@ -16,7 +16,6 @@ from src.lotusButtons import CircleButton
 import configparser
 from src.lotusAnimations import Animations
 
-#CONFIG_FILE = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/config.ini'))
 CONFIG_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/config.ini')
 
 class UIHubWindow(QWidget):
@@ -33,8 +32,6 @@ class UIHubWindow(QWidget):
         self.schedule_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/schedule.png')
         self.schedule_darker_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                                  'assets/scheduleDarker.png')
-        print("self.logo_path")
-        print(self.logo_path)
 
         ########### Buttons ###########
         self.new_note_button_display()

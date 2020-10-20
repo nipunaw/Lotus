@@ -22,12 +22,9 @@ PIP Package Build Scripts:
 - setup.py
 
 Run Scripts:
-- lotus.xlaunch
+- lotus.xlaunch (automatically ran after executable)
 
 Install Command: pip install lotus-notes
-
-Initialization: From src file (likely in lib/pythonx.xx/site-packages/src), start lotus.xlaunch prior to running.
-From the command line, this can be accomplished by typing 'cmd.exe /C lotus.xlaunch.'
 
 
 Executable Command: lotus

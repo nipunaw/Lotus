@@ -5,7 +5,7 @@ from setuptools import setuptools
 
 setuptools.setup(
     name="lotus-notes",
-    version="1.0.8",
+    version="1.0.11",
     packages = ["src"],
 	license = 'MIT',
     author="Nipuna Weerapperuma, Spencer Bass, David Jaworski, Carlos Morales-Diaz, & Hannah Williams",
@@ -14,7 +14,7 @@ setuptools.setup(
     install_requires=["PyQt5", "wsl", "wheel", "pytesseract"],
     include_package_data=True,
     entry_points = {
-        'console_scripts': ['lotus = src.lotusCore:main'],
+        'console_scripts': ['lotus = src.command_line:main'],
     },
     python_requires='>=3.7'
 )

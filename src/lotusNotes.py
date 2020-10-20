@@ -19,10 +19,9 @@ from datetime import date, datetime
 import pytesseract
 import configparser
 
-#DIRECTORY_FILE = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/directories.txt'))
-#CONFIG_FILE = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/config.ini'))
 CONFIG_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/config.ini')
 DIRECTORY_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/directories.txt')
+HEADER_SCHEDULE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/schedule.json')
 
 class UINoteWindow(QWidget):
     deleted_file = pyqtSignal(str)
@@ -113,9 +112,6 @@ class UINoteWindow(QWidget):
         self.name = QtWidgets.QLineEdit(name)
         self.course = QtWidgets.QComboBox()
         self.add_date = True
-
-        self.title_text = QtWidgets.QLabel(self)
-        self.title_text.setText("")
 
     ########### Utensil initialization/updates ###########
     def pen_init_update(self):
@@ -273,15 +269,15 @@ class UINoteWindow(QWidget):
             self.compare_canvas_image = self.canvas.toImage()
 
     def save_as(self):
-        self.file_path, _ = QtWidgets.QFileDialog.getSaveFileName(self,
+        self.file_path_2, _ = QtWidgets.QFileDialog.getSaveFileName(self,
                                                              "Save Notes", # Caption
                                                              "notes.jpg", # File-name, directory
                                                              "JPG (*.jpg);;PNG (*.png)") # File types
 
         # Blank file path
-        if self.file_path == "":
+        if self.file_path_2 == "":
             return
-
+        self.file_path =  self.file_path_2
         try:
             #file exists
             with open(DIRECTORY_FILE, "r") as f:
@@ -315,7 +311,7 @@ class UINoteWindow(QWidget):
 
     def heading(self):
         try:
-            with open('data/schedule.json') as f:
+            with open(HEADER_SCHEDULE) as f:
                 data = json.load(f)
         except FileNotFoundError:
             data = []
@@ -453,9 +449,10 @@ class UINoteWindow(QWidget):
             self.update()
 
     def ocr(self):
-        if self.new_strokes_since_save or self.file_path =="":
+        current_canvas_image = self.canvas.toImage()
+        if not current_canvas_image == self.compare_canvas_image or self.file_path == "":
             self.savePopup()
-        if not self.file_path == "":
+        if current_canvas_image == self.compare_canvas_image:
             ocr_findings = pytesseract.image_to_string(Image.open(self.file_path))
             #ocr_count = 0
             #for c in ocr_findings:
