@@ -1,3 +1,4 @@
 include README.txt
 include LICENSE.txt
 include src/assets/*
+include src/lotus.xlaunch
