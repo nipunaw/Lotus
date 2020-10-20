@@ -402,7 +402,7 @@ class UINoteWindow(QWidget):
             if self.file_path_2 == "":
                 return
             self.file_path = self.file_path_2
-            self.open_directory(self.file_path)
+            self.open_directory(self.file_path, truncate=False)
             self.setWindowTitle(self.file_path)
 
         else:
@@ -411,24 +411,26 @@ class UINoteWindow(QWidget):
             if self.file_path_2 == "":
                 return
             self.file_path = self.file_path_2
-            self.open_directory(self.file_path)
+            self.open_directory(self.file_path, truncate=False)
             self.setWindowTitle(self.file_path)
 
-    def open_directory(self, file_path):
-        if not os.path.isfile(file_path[:-1]):
+    def open_directory(self, file_path, truncate=True):
+        if truncate:
+            file_path = file_path[:-1]
+        if not os.path.isfile(file_path):
             error = QMessageBox()
             error.setText("Error: file does not exist.")
             error.exec_()
             with open(DIRECTORY_FILE, "r") as f:
                 paths = f.read().splitlines()
-            if file_path[:-1] in paths:
-                paths.remove(file_path[:-1])
+            if file_path in paths:
+                paths.remove(file_path)
                 with open(DIRECTORY_FILE, "w") as f:
                     f.writelines(p + "\n" for p in paths)
             self.deleted_file.emit(file_path)
             self.deleteLater()
         else:
-            self.canvas = QtGui.QPixmap(file_path[:-1])
+            self.canvas = QtGui.QPixmap(file_path)
             newCanvas = self.canvas.scaled(self.size().width(), self.size().height())
             self.canvas = newCanvas
             self.update()
