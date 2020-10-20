@@ -22,7 +22,7 @@ PIP Package Build Scripts:
 - setup.py
 
 Run Scripts:
-- N/A
+- lotus.xlaunch
 
 Install Command: pip install lotus-notes
 
