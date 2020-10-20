@@ -115,7 +115,7 @@ class ScheduleTable(QWidget):
                                                                               cls["color"]["g"],
                                                                               cls["color"]["b"]))
             class_name.clicked.connect(lambda state, x=cls: self.editClass(x))
-            print(cls["name"])
+            #print(cls["name"])
             self.layout.addWidget(class_name, i + 1, 0)
             # Add Blocks
             block_string = ""

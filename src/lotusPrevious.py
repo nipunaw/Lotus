@@ -19,6 +19,7 @@ class UIPreviousWindow(QWidget):
     def __init__(self, parent=None):
         super(UIPreviousWindow, self).__init__(parent)
         # Creates file if not created
+
         try:
             file = open(DIRECTORY_FILE, 'r')
         except IOError:
@@ -41,9 +42,17 @@ class UIPreviousWindow(QWidget):
         f = open(DIRECTORY_FILE, "r")
         self.directories = f.readlines()
         f.close()
-        self.buttons = {}
-        for i in range(len(self.directories)):
-            self.buttons[self.directories[i]] = QPushButton(self.directories[i], self)
-            self.buttons[self.directories[i]].move(63, i * 32 + 32)
-            self.buttons[self.directories[i]].move(63, i * 32 + 32)
+
+        self.layout = QtWidgets.QGridLayout()
+
+        if len(self.directories) == 0:
+            self.no_notes_text = QtWidgets.QLabel()
+            self.no_notes_text.setText("No non-scheduled notes to display")
+            self.layout.addWidget(self.no_notes_text)
+        else:
+            self.buttons = {}
+            for i in range(len(self.directories)):
+                self.buttons[self.directories[i]] = QPushButton(self.directories[i], self)
+                self.layout.addWidget(self.buttons[self.directories[i]], i,1)
+        self.setLayout(self.layout)
 

@@ -150,9 +150,8 @@ class MainWindow(QMainWindow):
 
     def startPreviousWindow(self):
         self.PreviousWindow = UIPreviousWindow(self)
-        self.setWindowTitle("Previous Notes")
+        self.setWindowTitle("Non-Scheduled Notes")
         self.setCentralWidget(self.PreviousWindow)
-        self.PreviousWindow.setFixedSize(400, 400)
 
         ########### Background color ###########
         p = self.PreviousWindow.palette()

@@ -89,9 +89,14 @@ class UINoteWindow(QWidget):
         self.first_time = True
 
         ########### Saving/Opening ###########
-        self.file_path = "" if not self.scheduled else directory
-        self.file_path_2 = ""
+        if self.scheduled:
+            self.file_path = self.directory
+        elif self.directory is not None:
+            self.file_path = self.directory[:-1]
+        else:
+            self.file_path = ""
 
+        self.file_path_2 = ""
         ########### Closing ###########
         self.new_strokes_since_save = False
 
@@ -106,6 +111,9 @@ class UINoteWindow(QWidget):
         self.name = QtWidgets.QLineEdit(name)
         self.course = QtWidgets.QComboBox()
         self.add_date = True
+
+        self.title_text = QtWidgets.QLabel(self)
+        self.title_text.setText("")
 
     ########### Utensil initialization/updates ###########
     def pen_init_update(self):
@@ -260,6 +268,7 @@ class UINoteWindow(QWidget):
             self.save_as()
         else:
             self.new_strokes_since_save = False
+
             self.canvas.save(self.file_path)
 
     def save_as(self):
@@ -267,6 +276,10 @@ class UINoteWindow(QWidget):
                                                              "Save Notes", # Caption
                                                              "notes.jpg", # File-name, directory
                                                              "JPG (*.jpg);;PNG (*.png)") # File types
+
+        # Blank file path
+        if self.file_path == "":
+            return
 
         try:
             #file exists
@@ -290,9 +303,7 @@ class UINoteWindow(QWidget):
             with open(DIRECTORY_FILE, "w+") as f:
                 f.write(self.file_path + "\n")
 
-        # Blank file path
-        if self.file_path == "":
-            return
+
         self.new_strokes_since_save = False
         # Saving canvas
         self.canvas.save(self.file_path)
@@ -348,6 +359,7 @@ class UINoteWindow(QWidget):
         self.update()
 
     def accept_header(self, title, name, course, time_checkbox, dialog):
+
         if len(title.text()) == 0 and len(name.text()) == 0 and course.currentText() == "---" and (not time_checkbox.isChecked()):
             #prompt to add at least one field
             error = QtWidgets.QMessageBox()
@@ -420,7 +432,7 @@ class UINoteWindow(QWidget):
             file_path = file_path[:-1]
         if not os.path.isfile(file_path):
             error = QMessageBox()
-            error.setText("Error: file does not exist.")
+            error.setText("Error: File does not exist.")
             error.exec_()
             with open(DIRECTORY_FILE, "r") as f:
                 paths = f.read().splitlines()
