@@ -19,8 +19,10 @@ from datetime import date, datetime
 import pytesseract
 import configparser
 
-DIRECTORY_FILE = "../data/directories.txt"
-CONFIG_FILE = "../data/config.ini"
+#DIRECTORY_FILE = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/directories.txt'))
+#CONFIG_FILE = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/config.ini'))
+CONFIG_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), '..', 'data/config.ini')
+DIRECTORY_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), '..', 'data/directories.txt')
 
 class UINoteWindow(QWidget):
     deleted_file = pyqtSignal(str)

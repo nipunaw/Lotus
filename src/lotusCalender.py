@@ -11,8 +11,10 @@ from PyQt5.QtWidgets import QPushButton, QWidget, QDialogButtonBox, QVBoxLayout,
 from src.lotusNotes import UINoteWindow
 import os.path
 
-SCHEDULE_FILE_PATH = "../data/schedule.json"
-SCHEDULED_NOTES_DIRECTORY = "../data/"
+#SCHEDULE_FILE_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/schedule.json'))
+#SCHEDULED_NOTES_DIRECTORY = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/'))
+SCHEDULE_FILE_PATH  = os.path.join(os.path.abspath(os.path.dirname( __file__ )), '..', 'data/schedule.json')
+SCHEDULED_NOTES_DIRECTORY = os.path.join(os.path.abspath(os.path.dirname( __file__ )), '..', 'data/')
 
 DAYS = ["M", "T", "W", "R", "F", "Sa", "Su"]
 

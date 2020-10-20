@@ -7,17 +7,13 @@
 # Spencer Bass
 
 ########### WSL import ###########
-import wsl
+import src.wsl
 ########### PyQT5 imports ###########
 import sys
 from PyQt5.QtWidgets import QApplication , QMainWindow , QPushButton , QWidget
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt
 ########### File imports ###########
-from lotusHub import UIHubWindow
-from lotusNotes import UINoteWindow
-from lotusPrevious import UIPreviousWindow
-from lotusCalender import UICalendarWindow
 import configparser
 from src.lotusHub import UIHubWindow
 from src.lotusNotes import UINoteWindow
@@ -29,9 +25,17 @@ import os
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) #enable highdpi scaling
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True) #use highdpi icons
 
-CONFIG_FILE = "../data/config.ini"
-DIRECTORY_FILE = "../data/directories.txt"
-SCHEDULED_NOTES_DIRECTORY = "../data/"
+#CONFIG_FILE = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/config.ini'))
+#SCHEDULE_FILE_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/schedule.json'))
+#SCHEDULED_NOTES_DIRECTORY = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/'))
+
+CONFIG_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), '..', 'data/config.ini')
+SCHEDULE_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname( __file__ )), '..', 'data/schedule.json')
+SCHEDULED_NOTES_DIRECTORY = os.path.join(os.path.abspath(os.path.dirname( __file__ )), '..', 'data/')
+print("lotusCore os.path.abspath(os.path.dirname( __file__ )")
+print(os.path.abspath(os.path.dirname( __file__ )))
+print("CONFIG_FILE")
+print(CONFIG_FILE)
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -181,7 +185,7 @@ class MainWindow(QMainWindow):
         self.show()
 
 def main():
-    wsl.set_display_to_host()
+    src.wsl.set_display_to_host()
     app = QApplication(sys.argv)
     os.makedirs("../data", exist_ok=True)
     w = MainWindow()

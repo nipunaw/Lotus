@@ -8,18 +8,32 @@
 
 ########### PyQT5 imports ###########
 import sys
+import os
 from PyQt5.QtWidgets import QApplication , QMainWindow , QPushButton , QWidget
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt
-from lotusButtons import CircleButton
+from src.lotusButtons import CircleButton
 import configparser
-from lotusAnimations import Animations
+from src.lotusAnimations import Animations
 
-CONFIG_FILE = "../data/config.ini"
+#CONFIG_FILE = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/config.ini'))
+CONFIG_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), '..', 'data/config.ini')
 
 class UIHubWindow(QWidget):
     def __init__(self, parent=None):
         super(UIHubWindow, self).__init__(parent)
+
+        self.logo_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/lotus.png')
+        self.new_notes_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/newNote.png')
+        self.new_notes_darker_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                                  'assets/newNoteDarker.png')
+        self.previous_notes_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/previousNotes.png')
+        self.previous_notes_darker_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                                       'assets/previousNotesDarker.png')
+        self.schedule_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/schedule.png')
+        self.schedule_darker_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                                 'assets/scheduleDarker.png')
+
         ########### Buttons ###########
         self.new_note_button_display()
         self.schedule_button_display()
@@ -38,7 +52,7 @@ class UIHubWindow(QWidget):
     #   QtWidgets.QPushButton.resizeEvent(self, event)
 
     def new_note_button_display(self):
-        self.new_note_button = CircleButton("assets/newNote.png","assets/newNoteDarker.png")
+        self.new_note_button = CircleButton(self.new_notes_path, self.new_notes_darker_path)
         #self.new_note_button.setFixedSize(120, 120)
         #self.new_note_button.setIcon(QtGui.QIcon('assets/newNote.png'))
         #self.new_note_button.setIconSize(self.new_note_button.size())
@@ -46,14 +60,14 @@ class UIHubWindow(QWidget):
         #self.new_note_button.setStyleSheet("background-color: black")
 
     def schedule_button_display(self):
-        self.schedule_button = CircleButton("assets/schedule.png", "assets/scheduleDarker.png")
+        self.schedule_button = CircleButton(self.schedule_path, self.schedule_darker_path)
         #self.schedule_button.setFixedSize(120, 120)
         #self.schedule_button.setIcon(QtGui.QIcon('assets/schedule.png'))
         #self.schedule_button.setIconSize(self.schedule_button.size())
         #self.schedule_button.setStyleSheet("background-color: black; padding-left: 100px; padding-right: 100px; text-align: center")
 
     def previous_notes_button_display(self):
-        self.previous_notes_button = CircleButton("assets/previousNotes.png", "assets/previousNotesDarker.png")
+        self.previous_notes_button = CircleButton(self.previous_notes_path, self.previous_notes_darker_path)
         #self.previous_notes_button.setFixedSize(120, 120)
         #self.previous_notes_button.setIcon(QtGui.QIcon('assets/previousNotes.png'))
         #self.previous_notes_button.setIconSize(self.previous_notes_button.size())
@@ -119,7 +133,7 @@ class UIHubWindow(QWidget):
     def grid_layout(self):
             ############ Lotus Logo ###########
             self.logo = QtWidgets.QLabel(self)
-            self.pixmap = QtGui.QPixmap('assets/lotus.png')
+            self.pixmap = QtGui.QPixmap(self.logo_path)
             self.logo.setPixmap(self.pixmap.scaled(300, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
             ########### Set-Up Grid Layout ###########
