@@ -160,8 +160,9 @@ class UINoteWindow(QWidget):
             self.eraser_button_display()
             self.pen_button_display()
             self.first_time = False
-            if (self.directory is not None and not self.scheduled) or (self.directory is not None and self.scheduled and os.path.isfile(self.directory)):
-                self.open_directory(self.directory)
+            if (self.directory is not None and not self.scheduled) \
+                    or (self.directory is not None and self.scheduled and os.path.isfile(self.directory)):
+                self.open_directory(self.directory, truncate=(not self.scheduled))
         else: # Not reached
             newCanvas = self.canvas.scaled(self.size().width(), self.size().height())
             self.canvas = newCanvas
