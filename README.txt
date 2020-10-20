@@ -7,7 +7,7 @@
 # Carlos Morales-Diaz
 # Spencer Bass
 
-Github Link: https://github.com/nipunaw/Lotus/
+Github Link: https://github.com/nipunaw/Lotus/tree/design-prototype
 
 Description: Lotus introduces dynamicity and modularity to
 stylus-based notetaking on desktop and laptop platforms.
@@ -22,8 +22,7 @@ PIP Package Build Scripts:
 - setup.py
 
 Run Scripts:
-- ubuntu.config
-- lotus.xlaunch
+- N/A
 
 Install Command: pip install lotus-notes
 

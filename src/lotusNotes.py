@@ -135,13 +135,12 @@ class UINoteWindow(QWidget):
     ########### Closing ###########
 
     def closeEvent(self, event):
-        compare_canvas = QtGui.QPixmap(self.size().width(), self.size().height())
-        compare_canvas.fill(Qt.white)
-        compare_canvas_image = compare_canvas.toImage()
+        #compare_canvas = QtGui.QPixmap(self.size().width(), self.size().height())
+        #compare_canvas.fill(Qt.white)
+        #compare_canvas_image = compare_canvas.toImage()
         current_canvas_image = self.canvas.toImage()
-        if not current_canvas_image == compare_canvas_image:
-            if self.new_strokes_since_save:
-                self.savePopup()
+        if not current_canvas_image == self.compare_canvas_image:
+            self.savePopup()
 
     def savePopup(self):
         self.save_prompt = QtWidgets.QDialog(self)
@@ -176,7 +175,7 @@ class UINoteWindow(QWidget):
         else: # Not reached
             newCanvas = self.canvas.scaled(self.size().width(), self.size().height())
             self.canvas = newCanvas
-
+        self.compare_canvas_image = self.canvas.toImage()
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
@@ -270,8 +269,8 @@ class UINoteWindow(QWidget):
             self.save_as()
         else:
             self.new_strokes_since_save = False
-
             self.canvas.save(self.file_path)
+            self.compare_canvas_image = self.canvas.toImage()
 
     def save_as(self):
         self.file_path, _ = QtWidgets.QFileDialog.getSaveFileName(self,
@@ -310,6 +309,7 @@ class UINoteWindow(QWidget):
         # Saving canvas
         self.canvas.save(self.file_path)
         self.setWindowTitle(self.file_path)
+        self.compare_canvas_image = self.canvas.toImage()
 
         ########### Heading ###########
 
@@ -411,7 +411,8 @@ class UINoteWindow(QWidget):
         self.accept_header(self.title, self.name, self.course, time_checkbox, dialog)
 
     def open(self):
-        if self.new_strokes_since_save:
+        current_canvas_image = self.canvas.toImage()
+        if not current_canvas_image == self.compare_canvas_image:
             self.savePopup()
             self.file_path_2, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home", "JPG (*.jpg);;PNG (*.png)")
             if self.file_path_2 == "":
@@ -448,6 +449,7 @@ class UINoteWindow(QWidget):
             self.canvas = QtGui.QPixmap(file_path)
             newCanvas = self.canvas.scaled(self.size().width(), self.size().height())
             self.canvas = newCanvas
+            self.compare_canvas_image = self.canvas.toImage()
             self.update()
 
     def ocr(self):

@@ -5,7 +5,7 @@ from setuptools import setuptools
 
 setuptools.setup(
     name="lotus-notes",
-    version="0.0.56",
+    version="1.0.0",
     packages = ["src"],
 	license = 'MIT',
     author="Nipuna Weerapperuma, Spencer Bass, David Jaworski, Carlos Morales-Diaz, & Hannah Williams",
