@@ -7,7 +7,7 @@
 # Carlos Morales-Diaz
 # Spencer Bass
 
-Github Link: https://github.com/nipunaw/Lotus/tree/design-prototype
+Github Link: https://github.com/nipunaw/Lotus
 
 Description: Lotus introduces dynamicity and modularity to
 stylus-based notetaking on desktop and laptop platforms.
@@ -25,6 +25,8 @@ Run Scripts:
 - lotus.xlaunch
 
 Install Command: pip install lotus-notes
+
+Initialization: From src file (likely in lib/pythonx.xx/site-packages/src), start lotus.xlaunch prior to running.
 
 Executable Command: lotus
 
