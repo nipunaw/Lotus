@@ -17,7 +17,7 @@ import configparser
 from src.lotusAnimations import Animations
 
 #CONFIG_FILE = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/config.ini'))
-CONFIG_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), '..', 'data/config.ini')
+CONFIG_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/config.ini')
 
 class UIHubWindow(QWidget):
     def __init__(self, parent=None):

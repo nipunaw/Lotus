@@ -29,13 +29,13 @@ QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True) #use h
 #SCHEDULE_FILE_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/schedule.json'))
 #SCHEDULED_NOTES_DIRECTORY = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/'))
 
-CONFIG_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), '..', 'data/config.ini')
-SCHEDULE_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname( __file__ )), '..', 'data/schedule.json')
-SCHEDULED_NOTES_DIRECTORY = os.path.join(os.path.abspath(os.path.dirname( __file__ )), '..', 'data/')
+CONFIG_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/config.ini')
+SCHEDULE_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/schedule.json')
+SCHEDULED_NOTES_DIRECTORY = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/')
 print("lotusCore os.path.abspath(os.path.dirname( __file__ )")
 print(os.path.abspath(os.path.dirname( __file__ )))
-print("CONFIG_FILE")
-print(CONFIG_FILE)
+print("SCHEDULED_NOTES_DIRECTORY")
+print(SCHEDULED_NOTES_DIRECTORY)
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -187,7 +187,7 @@ class MainWindow(QMainWindow):
 def main():
     src.wsl.set_display_to_host()
     app = QApplication(sys.argv)
-    os.makedirs("../data", exist_ok=True)
+    os.makedirs(SCHEDULED_NOTES_DIRECTORY, exist_ok=True)
     w = MainWindow()
     sys.exit(app.exec_())
 

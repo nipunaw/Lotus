@@ -21,8 +21,8 @@ import configparser
 
 #DIRECTORY_FILE = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/directories.txt'))
 #CONFIG_FILE = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/config.ini'))
-CONFIG_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), '..', 'data/config.ini')
-DIRECTORY_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), '..', 'data/directories.txt')
+CONFIG_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/config.ini')
+DIRECTORY_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/directories.txt')
 
 class UINoteWindow(QWidget):
     deleted_file = pyqtSignal(str)
@@ -315,7 +315,7 @@ class UINoteWindow(QWidget):
 
     def heading(self):
         try:
-            with open('../data/schedule.json') as f:
+            with open('data/schedule.json') as f:
                 data = json.load(f)
         except FileNotFoundError:
             data = []
