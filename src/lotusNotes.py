@@ -205,6 +205,7 @@ class UINoteWindow(QWidget):
             self.lastPoint = event.pos()
             self.update()
         elif event.buttons() and Qt.MiddleButton and self.mouse_button_scrolling:
+            pass
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
