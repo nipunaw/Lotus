@@ -7,14 +7,9 @@
 # Spencer Bass
 
 ########### PyQT5 imports ###########
-import sys
-import os
-from PyQt5.QtWidgets import QApplication , QMainWindow , QPushButton , QWidget
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from PyQt5.QtCore import Qt
-
-#DIRECTORY_FILE = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/directories.txt'))
-DIRECTORY_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/directories.txt')
+from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QPushButton, QWidget
+from src.constants import DIRECTORY_FILE
 
 class UIPreviousWindow(QWidget):
     def __init__(self, parent=None):

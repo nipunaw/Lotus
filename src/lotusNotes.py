@@ -6,22 +6,19 @@
 # Carlos Morales-Diaz
 # Spencer Bass
 
+import configparser
+import json
 ########### PyQT5 imports ###########
 import os
+from datetime import date
 
-from PIL import Image
-import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QLabel, QMessageBox
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from PyQt5.QtCore import Qt, pyqtSignal
-import json
-from datetime import date, datetime
 import pytesseract
-import configparser
+from PIL import Image
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QMessageBox
 
-CONFIG_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/config.ini')
-DIRECTORY_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/directories.txt')
-HEADER_SCHEDULE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/schedule.json')
+from src.constants import CONFIG_FILE, DIRECTORY_FILE, SCHEDULE_FILE_PATH
 
 class UINoteWindow(QWidget):
     deleted_file = pyqtSignal(str)
@@ -37,6 +34,8 @@ class UINoteWindow(QWidget):
         self.pen_utensil = True
         self.eraser_utensil = False
         self.utensil_press = False
+        # Scrolling Parameters #
+        self.mouse_button_scrolling = False
         # Pen default parameters
         self.pen_current = QtGui.QPen()
         self.pen_brush_size = 4
@@ -190,6 +189,8 @@ class UINoteWindow(QWidget):
             painter.drawPoint(event.pos())
             self.lastPoint = event.pos()
             self.update()
+        elif event.button() == Qt.MiddleButton:
+            self.mouse_button_scrolling = True
 
     def mouseMoveEvent(self, event):
         if event.buttons() and Qt.LeftButton and self.utensil_press:
@@ -203,11 +204,13 @@ class UINoteWindow(QWidget):
             painter.drawLine(self.lastPoint, event.pos())
             self.lastPoint = event.pos()
             self.update()
+        elif event.buttons() and Qt.MiddleButton and self.mouse_button_scrolling:
 
     def mouseReleaseEvent(self, event):
-        if event.button == Qt.LeftButton:
+        if event.button() == Qt.LeftButton:
             self.utensil_press = False
-            
+        elif event.button() == Qt.MiddleButton:
+            self.mouse_button_scrolling = False
 
     def home_button_display(self):
         #self.home_button.setEnabled(False)
@@ -311,7 +314,7 @@ class UINoteWindow(QWidget):
 
     def heading(self):
         try:
-            with open(HEADER_SCHEDULE) as f:
+            with open(SCHEDULE_FILE_PATH) as f:
                 data = json.load(f)
         except FileNotFoundError:
             data = []

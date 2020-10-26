@@ -19,15 +19,12 @@ from src.lotusHub import UIHubWindow
 from src.lotusNotes import UINoteWindow
 from src.lotusPrevious import UIPreviousWindow
 from src.lotusCalender import UICalendarWindow
+from src.constants import CONFIG_FILE, SCHEDULED_NOTES_DIRECTORY
 ########### Other imports ###########
 import os
 
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) #enable highdpi scaling
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True) #use highdpi icons
-
-CONFIG_FILE = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/config.ini')
-SCHEDULE_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/schedule.json')
-SCHEDULED_NOTES_DIRECTORY = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/')
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):

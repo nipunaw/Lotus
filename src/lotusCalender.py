@@ -7,14 +7,7 @@ from PyQt5.QtGui import QColor, QPolygon, QPen
 from PyQt5.QtWidgets import QPushButton, QWidget, QDialogButtonBox, QVBoxLayout, QHBoxLayout, \
     QDialog, QFormLayout, QSpinBox, QDateTimeEdit, QLineEdit, QTimeEdit, QRadioButton, QMessageBox, QLabel, \
     QCalendarWidget, QStackedWidget, QColorDialog
-
-from src.lotusNotes import UINoteWindow
-import os.path
-
-#SCHEDULE_FILE_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/schedule.json'))
-#SCHEDULED_NOTES_DIRECTORY = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/'))
-SCHEDULE_FILE_PATH  = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/schedule.json')
-SCHEDULED_NOTES_DIRECTORY = os.path.join(os.path.abspath(os.path.dirname( __file__ )), 'data/')
+from src.constants import SCHEDULE_FILE_PATH
 
 DAYS = ["M", "T", "W", "R", "F", "Sa", "Su"]
 

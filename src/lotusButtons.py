@@ -7,11 +7,7 @@
 # Spencer Bass
 
 ########### PyQT5 imports ###########
-import sys
-from PyQt5.QtWidgets import QApplication , QMainWindow , QPushButton , QWidget
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from PyQt5.QtCore import Qt
-
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 class CircleButton(QtWidgets.QPushButton):
     def __init__(self, directory, directory_darker, parent=None):
