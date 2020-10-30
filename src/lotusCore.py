@@ -142,7 +142,7 @@ class MainWindow(QMainWindow):
     #     self.show()
 
     def startPreviousWindow(self):
-        self.PreviousWindow = UIPreviousWindow(self)
+        self.PreviousWindow = UIPreviousWindow(set_paths=False)
         self.setWindowTitle("Non-Scheduled Notes")
         self.setCentralWidget(self.PreviousWindow)
 

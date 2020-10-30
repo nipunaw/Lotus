@@ -11,13 +11,17 @@ import json
 ########### PyQT5 imports ###########
 import os
 from datetime import date
+from src.lotusPrevious import UIPreviousWindow
+from src.lotusCore import *
+
 
 import pytesseract
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QMessageBox
+from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QMessageBox, QDialog
 
+from src import lotusCore
 from src.constants import CONFIG_FILE, DIRECTORY_FILE, SCHEDULE_FILE_PATH
 
 class UINoteWindow(QWidget):
@@ -25,6 +29,10 @@ class UINoteWindow(QWidget):
 
     def __init__(self, directory : str, parent=None, scheduled=False):
         super(UINoteWindow, self).__init__(parent)
+
+        # To support open previous
+        self.newNoteCount = 0
+        self.newNotes = []
 
         self.directory = directory
         self.scheduled = scheduled
@@ -64,15 +72,18 @@ class UINoteWindow(QWidget):
         self.save_option.setShortcut("Ctrl+S")
         self.save_as_option = QtWidgets.QAction("Save As" if not scheduled else "Export", self)
         self.save_as_option.setShortcut("F12")
+        self.open_recent_option = QtWidgets.QAction("Open Recent", self)
         self.heading_option = QtWidgets.QAction("Add/Edit Heading", self)
         self.heading_option.setShortcut("Ctrl+H")
         self.settings_option = QtWidgets.QAction("Font")
         self.settings_menu.addAction(self.settings_option)
         self.file_menu.addAction(self.save_option)
         self.file_menu.addAction(self.save_as_option)
+        self.file_menu.addAction(self.open_recent_option)
         self.template_menu.addAction(self.heading_option)
         self.save_option.triggered.connect(self.save)
         self.save_as_option.triggered.connect(self.save_as)
+        self.open_recent_option.triggered.connect(self.open_recent)
         self.heading_option.triggered.connect(self.heading)
         self.settings_option.triggered.connect(self.settings)
         self.open_option = QtWidgets.QAction("Open", self)
@@ -311,7 +322,67 @@ class UINoteWindow(QWidget):
         self.setWindowTitle(self.file_path)
         self.compare_canvas_image = self.canvas.toImage()
 
-        ########### Heading ###########
+    # To support open previous
+    def open_recent(self):
+        # will replace with code that actually works
+        self.PreviousWindow = UIPreviousWindow(set_paths=True)
+        self.PreviousWindow.setWindowTitle("Non-Scheduled Notes")
+        ##self.PreviousWindow.setCentralWidget(self.PreviousWindow)
+
+        ########### Background color ###########
+        p = self.PreviousWindow.palette()
+        p.setColor(self.PreviousWindow.backgroundRole(), Qt.white)
+        self.PreviousWindow.setPalette(p)
+
+        ########### Button handling ###########
+        for i in range(len(self.PreviousWindow.directories)):
+            self.PreviousWindow.buttons[self.PreviousWindow.directories[i]].clicked.connect(
+                lambda state, x=self.PreviousWindow.directories[i]: self.NoteWindowSeparate(x))
+
+        self.PreviousWindow.show()
+
+    # To support open previous
+    def NoteWindowSeparate(self, directory, scheduled=False, cls=None, date=None):
+        window = UINoteWindow(directory, scheduled=scheduled)
+        self.newNotes.append(window)
+        self.newNotes[self.newNoteCount].setFixedSize(1200, 600)
+        if directory:
+            if scheduled and cls is not None:
+                cls_title = "{} - {} - Scheduled Notes".format(cls["name"], date.toString("MM/dd/yyyy"), cls)
+                self.newNotes[self.newNoteCount].setWindowTitle(cls_title)
+            else:
+                window.deleted_file.connect(self.PreviousWindow.delete_button)
+                self.newNotes[self.newNoteCount].setWindowTitle(directory)
+        else:
+            self.newNotes[self.newNoteCount].setWindowTitle("New Note " + str(self.newNoteCount + 1) if directory is None else directory)
+        self.newNotes[self.newNoteCount].home_button.clicked.connect(self.HubWindowSeparate)
+        self.newNotes[self.newNoteCount].show()
+        self.newNoteCount += 1
+
+    # To support open previous
+    def HubWindowSeparate(self):
+        if self.first_time:
+            self.first_time = False
+            self.HubWindow = UIHubWindow()
+            self.HubWindow.setFixedSize(800, 500)
+            self.HubWindow.setWindowTitle("Lotus Home")
+
+            ########### Background color ###########
+            p = self.HubWindow.palette()
+            p.setColor(self.HubWindow.backgroundRole(), QtGui.QColor(Qt.white))
+            self.HubWindow.setPalette(p)
+
+            ########### Button handling ###########
+            self.HubWindow.new_note_button.clicked.connect(lambda: self.NoteWindowSeparate(None))
+            self.HubWindow.schedule_button.clicked.connect(self.startCalenderWindow)
+            self.HubWindow.previous_notes_button.clicked.connect(self.startPreviousWindow)
+
+            self.HubWindow.show()
+
+        elif self.HubWindow.isHidden():
+            self.HubWindow.setHidden(False)
+        else:
+            self.HubWindow.setHidden(True)
 
     def heading(self):
         try:
