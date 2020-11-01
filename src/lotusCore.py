@@ -95,7 +95,6 @@ class MainWindow(QMainWindow):
     def NoteWindowSeparate(self, directory, scheduled=False, cls=None, date=None):
         window = UINoteWindow(directory, scheduled=scheduled)
         self.newNotes.append(window)
-        self.newNotes[self.newNoteCount].setFixedSize(1200, 600)
         if directory:
             if scheduled and cls is not None:
                 cls_title = "{} - {} - Scheduled Notes".format(cls["name"], date.toString("MM/dd/yyyy"), cls)

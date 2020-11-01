@@ -11,14 +11,308 @@ import json
 ########### PyQT5 imports ###########
 import os
 from datetime import date
-
+from enum import Enum
 import pytesseract
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QMessageBox
+from PyQt5.QtCore import Qt, pyqtSignal, QSize, QPoint, QRect
+from PyQt5.QtGui import QRegion, QColor
+from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QMessageBox, QScrollArea, QGridLayout, QHBoxLayout, \
+    QVBoxLayout, QSizePolicy
 
 from src.constants import CONFIG_FILE, DIRECTORY_FILE, SCHEDULE_FILE_PATH
+
+class Utensil:
+    def __init__(self, color : QColor, radius : int,
+                 brush_style : Qt.PenStyle = Qt.SolidLine,
+                 cap_style : Qt.PenCapStyle = Qt.RoundCap,
+                 join_style : Qt.PenJoinStyle = Qt.RoundJoin):
+        self.maxWidth = 50
+        self.color = color
+        self.radius = radius
+        self.brush_style = brush_style
+        self.cap_style = cap_style
+        self.join_style = join_style
+
+    def incrementWidth(self):
+        result = self.radius + 1
+        self.radius = result if result < self.maxWidth else self.maxWidth
+
+    def decrementWidth(self):
+        result = self.radius - 1
+        self.radius = result if result >= 1 else 1
+
+    def pen(self):
+        pen = QtGui.QPen()
+        pen.setStyle(self.brush_style)
+        pen.setWidth(self.radius)
+        pen.setColor(self.color)
+        pen.setCapStyle(self.cap_style)
+        pen.setJoinStyle(self.join_style)
+        return pen
+
+class Utensils(Utensil, Enum):
+    PEN = (Qt.black, 4)
+    ERASER = (Qt.white, 4)
+
+class Canvas(QLabel):
+    scrolled = pyqtSignal(QtGui.QWheelEvent)
+    mouse_grab = pyqtSignal(QPoint)
+    def __init__(self):
+        super(Canvas, self).__init__()
+        self.setStyleSheet("background-color: black")
+        master_canvas_layer = QtGui.QPixmap(self.size())
+        master_canvas_layer.fill(Qt.white)
+        self.activeLayers = []
+        self.activeLayers.append(master_canvas_layer)
+        self.inactiveLayers = []
+        #self.canvasLayers = [master_canvas_layer] # Deprecated
+        #self.activeLayers = [True] # Deprecated
+        # self.numLayers = 1 # Deprecated
+        # self.activePointer = 1 # Deprecated
+        self.last_save = None
+        self.setPixmap(self.activeLayers[0])
+        ########### Writing parameters ###########
+        # General utensil parameters
+        self.utensil_press = False
+        self.current_utensil = Utensils.PEN
+        # Scrolling Parameters
+        self.mouse_button_scrolling = False
+        # Pen default parameters
+        self.pen_lastPoint = QtCore.QPoint()
+        # Eraser default parameters
+        self.eraser_lastPoint = QtCore.QPoint()
+        self.cursor = QtGui.QCursor()
+        self.cursor.setShape(Qt.CrossCursor)
+        self.setCursor(self.cursor)
+
+    def resizeCanvas(self, size):
+        for i in range (1, len(self.activeLayers)):
+            temp = self.activeLayers[i]
+            self.activeLayers[i] = QtGui.QPixmap(size)
+            self.activeLayers[i].fill(Qt.transparent)
+            painter_layer = QtGui.QPainter(self.activeLayers[i])
+            painter_layer.drawPixmap(temp.rect(), temp, temp.rect())
+            painter_layer.end()
+
+        for i in range (0, len(self.inactiveLayers)):
+            temp = self.inactiveLayers[i]
+            self.inactiveLayers[i] = QtGui.QPixmap(size)
+            self.inactiveLayers[i].fill(Qt.transparent)
+            painter_layer = QtGui.QPainter(self.inactiveLayers[i])
+            painter_layer.drawPixmap(temp.rect(), temp, temp.rect())
+            painter_layer.end()
+
+        temp = self.activeLayers[0]
+        self.activeLayers[0] = QtGui.QPixmap(size)
+        self.activeLayers[0].fill(Qt.white)
+        painter = QtGui.QPainter(self.activeLayers[0])
+        painter.drawPixmap(temp.rect(), temp, temp.rect())
+        painter.end()
+
+        # self.update()
+
+        painter_layer = QtGui.QPainter(self.activeLayers[0])
+        for i in range(1, len(self.activeLayers)):
+            painter_layer.drawPixmap(self.rect(), self.activeLayers[i])
+        painter_layer.end()
+
+        self.setPixmap(self.activeLayers[0])
+        if self.last_save is None:
+            self.last_save = self.activeLayers[0]
+            self.hasChanged()
+
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        if self.activeLayers[0].size() != self.size():
+            self.resizeCanvas(self.size())
+
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        if event.button() == Qt.LeftButton:
+            self.utensil_press = True
+            # self.numLayers += 1
+            new_canvas_layer = QtGui.QPixmap(self.size())
+            new_canvas_layer.fill(Qt.transparent)
+
+            painter = QtGui.QPainter(new_canvas_layer)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setPen(self.current_utensil.pen())
+            painter.drawPoint(event.pos())
+
+            self.activeLayers.append(new_canvas_layer)
+            self.last_point_draw = event.pos()
+            self.update()
+            painter.end()
+        elif event.button() == Qt.MiddleButton:
+            self.setCursor(Qt.ClosedHandCursor)
+            self.last_point_scroll = event.globalPos()
+            self.mouse_button_scrolling = True
+        else:
+            super(Canvas, self).mousePressEvent(event)
+
+    def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
+        if event.buttons() and Qt.LeftButton and self.utensil_press:
+            if self.width() - event.pos().x() < 20:
+                self.resizeCanvas(QSize(self.width() + 100, self.height()))
+            if self.height() - event.pos().y() < 20:
+                self.resizeCanvas(QSize(self.width(), self.height() + 100))
+            painter = QtGui.QPainter(self.activeLayers[len(self.activeLayers) - 1])
+            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            painter.setPen(self.current_utensil.pen())
+            painter.drawLine(self.last_point_draw, event.pos())
+            self.last_point_draw = event.pos()
+            self.update()
+            painter.end()
+        elif event.buttons() and Qt.MiddleButton and self.mouse_button_scrolling:
+            offset = self.last_point_scroll - event.globalPos()
+            self.last_point_scroll = event.globalPos()
+            self.mouse_grab.emit(offset)
+        else:
+            super(Canvas, self).mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
+        if event.button() == Qt.LeftButton:
+            self.utensil_press = False
+        elif event.button() == Qt.MiddleButton:
+            self.setCursor(self.cursor)
+            self.mouse_button_scrolling = False
+
+    def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
+        self.scrolled.emit(event)
+
+    def paintEvent(self, event):
+        self.activeLayers[0].fill(Qt.white)
+        painter_layer = QtGui.QPainter(self.activeLayers[0])
+        for i in range(1, len(self.activeLayers)):
+            painter_layer.drawPixmap(self.rect(), self.activeLayers[i])
+        painter_layer.end()
+
+        painter = QtGui.QPainter(self)
+        painter.drawPixmap(self.rect(), self.activeLayers[0])
+        #for canvas in self.canvasLayers:
+        #    painter.drawPixmap(self.rect(), canvas)
+        painter.end()
+        self.hasChanged()
+
+    def hasChanged(self):
+        if self.last_save is None:
+            return False
+        return not self.pixmap().toImage() == self.last_save.toImage()
+
+    def save(self, file_path):
+        self.activeLayers[0].save(file_path)
+        self.last_save = self.activeLayers[0]
+
+    def setUtensil(self, utensil : Utensil):
+        self.current_utensil = utensil
+
+    # Button click handling
+    def clear(self):
+        # Reset canvas
+        # self.numLayers += 1
+        # self.activePointer += 1
+        clear_canvas_layer = QtGui.QPixmap(self.minimumSize())
+        clear_canvas_layer.fill(Qt.white)
+        self.activeLayers.append(clear_canvas_layer)
+        #self.activeLayers.append(True)
+        #self.master_canvas_layer.fill(Qt.white)
+        self.resizeCanvas(self.minimumSize())
+        self.update()
+        # Reset back to pen tool
+        self.setUtensil(Utensils.PEN)
+
+    def undo(self):
+        if len(self.activeLayers) > 1:
+            self.inactiveLayers.append(self.activeLayers.pop())
+
+        # if self.activePointer - 1 > 0:
+        #     print("Inctive Layer: "  + str(self.activePointer))
+        #     self.activeLayers[self.activePointer - 1] = False
+        #     self.activePointer -= 1
+        #
+        # self.canvasLayers[0].fill(Qt.white)
+        # painter_layer = QtGui.QPainter(self.canvasLayers[0])
+        # for i in range(1, len(self.canvasLayers)):
+        #     if self.activeLayers[i]:
+        #         print("Active: 1")
+        #         print("Active: "  + str(i + 1))
+        #         painter_layer.drawPixmap(self.rect(), self.canvasLayers[i])
+        # painter_layer.end()
+
+        self.update()
+        self.hasChanged()
+
+    def redo(self):
+        if len(self.inactiveLayers) > 0:
+            self.activeLayers.append(self.inactiveLayers.pop())
+
+        # if self.activePointer < self.numLayers:
+        #     self.activeLayers[self.activePointer] = True
+        #     self.activePointer += 1
+        #
+        # self.canvasLayers[0].fill(Qt.white)
+        # painter_layer = QtGui.QPainter(self.canvasLayers[0])
+        # for i in range(1, len(self.canvasLayers)):
+        #     if self.activeLayers[i]:
+        #         painter_layer.drawPixmap(self.rect(), self.canvasLayers[i])
+        # painter_layer.end()
+
+        self.update()
+        self.hasChanged()
+
+    def loadImage(self, file_path):
+        image_pixmap = QtGui.QPixmap(file_path)
+        canvas = QtGui.QPixmap(self.minimumSize().expandedTo(image_pixmap.size()))
+        painter = QtGui.QPainter(canvas)
+        painter.drawPixmap(canvas.rect(), image_pixmap, image_pixmap.rect())
+        self.activeLayers[0] = canvas
+        self.setPixmap(canvas)
+        self.last_save = self.activeLayers[0]
+
+class CanvasWindow(QScrollArea):
+    def __init__(self):
+        super(CanvasWindow, self).__init__()
+        self.setWidgetResizable(True)
+        self.layout = QVBoxLayout()
+        self.label = Canvas()
+        self.label.setMinimumSize(self.layout.minimumSize())
+        self.label.scrolled.connect(self.scrollForLabel)
+        self.label.mouse_grab.connect(self.mouseGrabScroll)
+        self.layout.setContentsMargins(0,0,0,0)
+        self.layout.setAlignment(Qt.AlignTop)
+        self.layout.addWidget(self.label, Qt.AlignTop | Qt.AlignLeft)
+
+        self.setWidget(self.label)
+        self.setLayout(self.layout)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+
+    def mouseGrabScroll(self, offset):
+        x = self.horizontalScrollBar().value() + offset.x()
+        y = self.verticalScrollBar().value() + offset.y()
+        self.horizontalScrollBar().setValue(x)
+        self.verticalScrollBar().setValue(y)
+
+    def scrollForLabel(self, event: QtGui.QWheelEvent):
+        hval = self.horizontalScrollBar().value()
+        vval = self.verticalScrollBar().value()
+        newx = hval - (event.angleDelta().x() / (8 * 15)) * self.horizontalScrollBar().singleStep()
+        newy = vval - (event.angleDelta().y() / (8 * 15)) * self.verticalScrollBar().singleStep()
+        hmin = self.horizontalScrollBar().minimum()
+        hmax = self.horizontalScrollBar().maximum()
+        if hmin < newx < hmax:
+            self.horizontalScrollBar().setValue(newx)
+        elif hmin >= newx:
+            self.horizontalScrollBar().setValue(hmin)
+        elif hmax <= newx:
+            self.horizontalScrollBar().setValue(hmax)
+        ymin = self.verticalScrollBar().minimum()
+        ymax = self.verticalScrollBar().maximum()
+        if ymin < newy < ymax:
+            self.verticalScrollBar().setValue(newy)
+        elif ymin >= newy:
+            self.verticalScrollBar().setValue(ymin)
+        elif ymax <= newy:
+            self.verticalScrollBar().setValue(ymax)
 
 class UINoteWindow(QWidget):
     deleted_file = pyqtSignal(str)
@@ -28,32 +322,6 @@ class UINoteWindow(QWidget):
 
         self.directory = directory
         self.scheduled = scheduled
-
-        ########### Writing parameters ###########
-        # General utensil parameters
-        self.pen_utensil = True
-        self.eraser_utensil = False
-        self.utensil_press = False
-        # Scrolling Parameters #
-        self.mouse_button_scrolling = False
-        # Pen default parameters
-        self.pen_current = QtGui.QPen()
-        self.pen_brush_size = 4
-        self.pen_brush_color = Qt.black
-        self.pen_brush_style = Qt.SolidLine
-        self.pen_cap_style = Qt.RoundCap
-        self.pen_join_style = Qt.RoundJoin
-        self.pen_lastPoint = QtCore.QPoint()
-        self.pen_init_update()
-        # Eraser default parameters
-        self.eraser_current = QtGui.QPen()
-        self.eraser_brush_size = 4
-        self.eraser_brush_color = Qt.white
-        self.eraser_brush_style = Qt.SolidLine
-        self.eraser_cap_style = Qt.RoundCap
-        self.eraser_join_style = Qt.RoundJoin
-        self.eraser_lastPoint = QtCore.QPoint()
-        self.eraser_init_update()
 
         ########### Menu Bar ###########
         self.menu_bar = QtWidgets.QMenuBar(self)
@@ -76,29 +344,13 @@ class UINoteWindow(QWidget):
         self.heading_option.triggered.connect(self.heading)
         self.settings_option.triggered.connect(self.settings)
         self.open_option = QtWidgets.QAction("Open", self)
+        self.open_option.setShortcut("Ctrl+O")
         self.file_menu.addAction(self.open_option)
         self.open_option.triggered.connect(self.open)
         self.ocr_menu = self.menu_bar.addMenu("OCR")
         self.find_ocr = QtWidgets.QAction("Find Typed/Neat Text", self)
         self.ocr_menu.addAction(self.find_ocr)
         self.find_ocr.triggered.connect(self.ocr)
-
-
-        ########### Canvas color ###########
-        # Handled by resizeEvent
-        self.first_time = True
-
-        ########### Saving/Opening ###########
-        if self.scheduled:
-            self.file_path = self.directory
-        elif self.directory is not None:
-            self.file_path = self.directory[:-1]
-        else:
-            self.file_path = ""
-
-        self.file_path_2 = ""
-        ########### Closing ###########
-        self.new_strokes_since_save = False
 
         ########### Buttons ###########
         # Handled by resizeEvent
@@ -112,30 +364,56 @@ class UINoteWindow(QWidget):
         self.course = QtWidgets.QComboBox()
         self.add_date = True
 
-    ########### Utensil initialization/updates ###########
-    def pen_init_update(self):
-        self.pen_current.setStyle(self.pen_brush_style)
-        self.pen_current.setWidth(self.pen_brush_size)
-        self.pen_current.setBrush(self.pen_brush_color)
-        self.pen_current.setCapStyle(self.pen_cap_style)
-        self.pen_current.setJoinStyle(self.pen_join_style)
+        ########### Layout ############
+        self.setMinimumSize(1200, 600)
+        self.canvas_window = CanvasWindow()
+        self.canvas_window.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+        self.layout = QVBoxLayout()
+        # heading = QtWidgets.QLineEdit()
+        # heading.setStyleSheet("border: 0px")
+        # self.layout.addWidget(heading)
+        self.layout.setContentsMargins(0,0,0,0)
+        self.layout.setSpacing(0)
+        self.layout.setAlignment(Qt.AlignTop)
+        self.layout.addWidget(self.canvas_window, Qt.AlignTop)
+        self.button_layout = QGridLayout()
+        self.button_layout.setContentsMargins(10,10,10,10)
 
-    def eraser_init_update(self):
-        self.eraser_current.setStyle(self.eraser_brush_style)
-        self.eraser_current.setWidth(self.eraser_brush_size)
-        self.eraser_current.setBrush(self.eraser_brush_color)
-        self.eraser_current.setCapStyle(self.eraser_cap_style)
-        self.eraser_current.setJoinStyle(self.eraser_join_style)
+        self.home_button_display()
+        self.clear_button_display()
+        self.eraser_button_display()
+        self.pen_button_display()
+        self.undo_button_display()
+        self.redo_button_display()
+
+        self.layout.addLayout(self.button_layout, Qt.AlignBottom)
+        self.setLayout(self.layout)
+        self.layout.setMenuBar(self.menu_bar)
+
+        ########### Saving/Opening ###########
+        if self.scheduled:
+            self.file_path = self.directory
+            self.open_directory(self.file_path)
+        elif self.directory is not None:
+            self.file_path = self.directory[:-1]
+            self.open_directory(self.file_path)
+        else:
+            self.file_path = ""
+
+        self.file_path_2 = ""
 
     ########### Closing ###########
-
     def closeEvent(self, event):
-        #compare_canvas = QtGui.QPixmap(self.size().width(), self.size().height())
-        #compare_canvas.fill(Qt.white)
-        #compare_canvas_image = compare_canvas.toImage()
-        current_canvas_image = self.canvas.toImage()
-        if not current_canvas_image == self.compare_canvas_image:
+        if self.canvas_window.label.hasChanged():
             self.savePopup()
+
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        if event.key() == Qt.Key_BracketLeft:
+            for u in Utensils:
+                u.decrementWidth()
+        elif event.key() == Qt.Key_BracketRight:
+            for u in Utensils:
+                u.incrementWidth()
 
     def savePopup(self):
         self.save_prompt = QtWidgets.QDialog(self)
@@ -153,130 +431,68 @@ class UINoteWindow(QWidget):
         self.save()
         self.save_prompt.deleteLater()
 
-    ########### Resizing ###########
+    def erase(self):
+        self.canvas_window.label.setUtensil(Utensils.ERASER)
+        self.eraser_button.setDisabled(True)
+        self.pen_button.setEnabled(True)
 
-    def resizeEvent(self, event):
-        if self.first_time:
-            self.canvas = QtGui.QPixmap(self.size().width(), self.size().height())
-            self.canvas.fill(Qt.white)
-            self.home_button_display()
-            self.clear_button_display()
-            self.eraser_button_display()
-            self.pen_button_display()
-            self.first_time = False
-            if (self.directory is not None and not self.scheduled) \
-                    or (self.directory is not None and self.scheduled and os.path.isfile(self.directory)):
-                self.open_directory(self.directory, truncate=(not self.scheduled))
-        else: # Not reached
-            newCanvas = self.canvas.scaled(self.size().width(), self.size().height())
-            self.canvas = newCanvas
-        self.compare_canvas_image = self.canvas.toImage()
-
-    def paintEvent(self, event):
-        painter = QtGui.QPainter(self)
-        painter.drawPixmap(self.rect(), self.canvas)
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.utensil_press = True
-            painter = QtGui.QPainter(self.canvas)
-            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-            if self.pen_utensil:
-                self.new_strokes_since_save = True
-                painter.setPen(QtGui.QPen(self.pen_current))
-            elif self.eraser_utensil:
-                painter.setPen(QtGui.QPen(self.eraser_current))
-            painter.drawPoint(event.pos())
-            self.lastPoint = event.pos()
-            self.update()
-        elif event.button() == Qt.MiddleButton:
-            self.mouse_button_scrolling = True
-
-    def mouseMoveEvent(self, event):
-        if event.buttons() and Qt.LeftButton and self.utensil_press:
-            painter = QtGui.QPainter(self.canvas)
-            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-            if self.pen_utensil:
-                painter.setPen(QtGui.QPen(self.pen_current))
-            elif self.eraser_utensil:
-                painter.setPen(QtGui.QPen(self.eraser_current))
-
-            painter.drawLine(self.lastPoint, event.pos())
-            self.lastPoint = event.pos()
-            self.update()
-        elif event.buttons() and Qt.MiddleButton and self.mouse_button_scrolling:
-            pass
-
-    def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.utensil_press = False
-        elif event.button() == Qt.MiddleButton:
-            self.mouse_button_scrolling = False
+    def pen(self):
+        self.canvas_window.label.setUtensil(Utensils.PEN)
+        self.pen_button.setDisabled(True)
+        self.eraser_button.setEnabled(True)
 
     def home_button_display(self):
-        #self.home_button.setEnabled(False)
-        self.home_button.resize(100, 32)
-        self.home_button.move(self.size().width()-125, self.size().height() - 50)
+        self.button_layout.addWidget(self.home_button, 0, 3)
         self.home_button.setToolTip("Clear any writing")
 
     def clear_button_display(self):
         self.clear_button = QtWidgets.QPushButton("Clear All", self)
-        self.clear_button.resize(100, 32)
-        self.clear_button.move(25, self.size().height()-50)
+        self.button_layout.addWidget(self.clear_button, 0, 2)
         self.clear_button.setToolTip("Clear any writing")
-        self.clear_button.clicked.connect(self.clear)
+        self.clear_button.clicked.connect(self.canvas_window.label.clear)
 
     def eraser_button_display(self):
         self.eraser_button = QtWidgets.QPushButton("Eraser", self)
-        self.eraser_button.resize(100, 32)
-        self.eraser_button.move(150, self.size().height()-50)
+        self.button_layout.addWidget(self.eraser_button, 0, 1)
         self.eraser_button.setToolTip("Erase any writing")
         self.eraser_button.clicked.connect(self.erase)
 
     def pen_button_display(self):
         self.pen_button = QtWidgets.QPushButton("Pen", self)
-        self.pen_button.setDisabled(self.pen_utensil) # In use by default
+        self.pen_button.setDisabled(False) # In use by default
         self.pen_button.resize(100, 32)
-        self.pen_button.move(275, self.size().height()-50)
+        self.button_layout.addWidget(self.pen_button, 0, 0)
         self.pen_button.setToolTip("Premiere writing utensil")
         self.pen_button.clicked.connect(self.pen)
 
-    # Button click handling
+    def undo_button_display(self):
+        self.undo_button = QtWidgets.QPushButton("Undo", self)
+        self.undo_button.setDisabled(False)  # In use by default
+        self.undo_button.resize(100, 32)
+        self.button_layout.addWidget(self.undo_button, 0, 4)
+        #self.undo_button.setToolTip("Premiere writing utensil")
+        self.undo_button.clicked.connect(self.canvas_window.label.undo)
 
-    def clear(self):
-        # Reset canvas
-        self.canvas.fill(Qt.white)
-        self.update()
-        # Reset back to pen tool
-        self.pen()
-
-    def erase(self):
-        self.pen_utensil = False
-        self.eraser_utensil = True
-        self.eraser_button.setDisabled(True)
-        self.pen_button.setEnabled(True)
-
-    def pen(self):
-        self.pen_utensil = True
-        self.eraser_utensil = False
-        self.pen_button.setDisabled(True)
-        self.eraser_button.setEnabled(True)
+    def redo_button_display(self):
+        self.redo_button = QtWidgets.QPushButton("Redo", self)
+        self.redo_button.setDisabled(False)  # In use by default
+        self.redo_button.resize(100, 32)
+        self.button_layout.addWidget(self.redo_button, 0, 5)
+        #self.redo_button.setToolTip("Premiere writing utensil")
+        self.redo_button.clicked.connect(self.canvas_window.label.redo)
 
     ########### Saving ###########
-
     def save(self):
         if self.file_path == "":
             self.save_as()
         else:
-            self.new_strokes_since_save = False
-            self.canvas.save(self.file_path)
-            self.compare_canvas_image = self.canvas.toImage()
+            self.canvas_window.label.save(self.file_path)
 
     def save_as(self):
         self.file_path_2, _ = QtWidgets.QFileDialog.getSaveFileName(self,
-                                                             "Save Notes", # Caption
-                                                             "notes.jpg", # File-name, directory
-                                                             "JPG (*.jpg);;PNG (*.png)") # File types
+                                                                    "Save Notes", # Caption
+                                                                    "notes.jpg", # File-name, directory
+                                                                    "JPG (*.jpg);;PNG (*.png)") # File types
 
         # Blank file path
         if self.file_path_2 == "":
@@ -304,15 +520,11 @@ class UINoteWindow(QWidget):
             with open(DIRECTORY_FILE, "w+") as f:
                 f.write(self.file_path + "\n")
 
-
-        self.new_strokes_since_save = False
         # Saving canvas
-        self.canvas.save(self.file_path)
+        self.canvas_window.label.save(self.file_path)
         self.setWindowTitle(self.file_path)
-        self.compare_canvas_image = self.canvas.toImage()
 
-        ########### Heading ###########
-
+    ########### Heading ###########
     def heading(self):
         try:
             with open(SCHEDULE_FILE_PATH) as f:
@@ -357,7 +569,6 @@ class UINoteWindow(QWidget):
         header_dialog.setLayout(layout)
         header_dialog.update()
         header_dialog.show()
-        self.new_strokes_since_save = True
         self.update()
 
     def accept_header(self, title, name, course, time_checkbox, dialog):
@@ -373,7 +584,7 @@ class UINoteWindow(QWidget):
         # time = datetime.now()
         date_str = today.strftime("%B %d, %Y")
         # time_str = time.strftime("%H:%M:%S")
-        painter = QtGui.QPainter(self.canvas)
+        painter = QtGui.QPainter(self.canvas_window.label.canvas)
         rect = QtCore.QRect(8, 20, 750, 150)
         painter.fillRect(rect, Qt.white)
         painter.setFont(self.font)
@@ -411,57 +622,38 @@ class UINoteWindow(QWidget):
         self.accept_header(self.title, self.name, self.course, time_checkbox, dialog)
 
     def open(self):
-        current_canvas_image = self.canvas.toImage()
-        if not current_canvas_image == self.compare_canvas_image:
+        if self.canvas_window.label.hasChanged():
             self.savePopup()
-            self.file_path_2, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home", "JPG (*.jpg);;PNG (*.png)")
-            if self.file_path_2 == "":
-                return
-            self.file_path = self.file_path_2
-            self.open_directory(self.file_path, truncate=False)
-            self.setWindowTitle(self.file_path)
+        self.file_path_2, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home", "JPG (*.jpg);;PNG (*.png)")
+        if self.file_path_2 == "":
+            return
+        self.file_path = self.file_path_2
+        self.open_directory(self.file_path)
+        self.setWindowTitle(self.file_path)
 
-        else:
-            self.file_path_2, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home",
-                                                                        "JPG (*.jpg);;PNG (*.png)")
-            if self.file_path_2 == "":
-                return
-            self.file_path = self.file_path_2
-            self.open_directory(self.file_path, truncate=False)
-            self.setWindowTitle(self.file_path)
-
-    def open_directory(self, file_path, truncate=True):
-        if truncate:
-            file_path = file_path[:-1]
+    def open_directory(self, file_path):
         if not os.path.isfile(file_path):
-            error = QMessageBox()
-            error.setText("Error: File does not exist.")
-            error.exec_()
-            with open(DIRECTORY_FILE, "r") as f:
-                paths = f.read().splitlines()
-            if file_path in paths:
-                paths.remove(file_path)
-                with open(DIRECTORY_FILE, "w") as f:
-                    f.writelines(p + "\n" for p in paths)
-            self.deleted_file.emit(file_path)
-            self.deleteLater()
+            if not self.scheduled:
+                error = QMessageBox()
+                error.setText("Error: File does not exist.")
+                error.exec_()
+                with open(DIRECTORY_FILE, "r") as f:
+                    paths = f.read().splitlines()
+                if file_path in paths:
+                    paths.remove(file_path)
+                    with open(DIRECTORY_FILE, "w") as f:
+                        f.writelines(p + "\n" for p in paths)
+                self.deleted_file.emit(file_path)
+                self.deleteLater()
         else:
-            self.canvas = QtGui.QPixmap(file_path)
-            newCanvas = self.canvas.scaled(self.size().width(), self.size().height())
-            self.canvas = newCanvas
-            self.compare_canvas_image = self.canvas.toImage()
-            self.update()
+            self.canvas_window.label.loadImage(file_path)
 
     def ocr(self):
-        current_canvas_image = self.canvas.toImage()
-        if not current_canvas_image == self.compare_canvas_image or self.file_path == "":
+        self.canvas_window.label.current_canvas_image = self.canvas_window.label.canvas.toImage()
+        if self.canvas_window.label.hasChanged() or self.file_path == "":
             self.savePopup()
-        if current_canvas_image == self.compare_canvas_image:
+        if not self.canvas_window.label.hasChanged():
             ocr_findings = pytesseract.image_to_string(Image.open(self.file_path))
-            #ocr_count = 0
-            #for c in ocr_findings:
-            #    if c == '.':
-            #        ocr_count = ocr_count + 1
             ocr_prompt = QtWidgets.QDialog(self)
             ocr_prompt.setWindowTitle("Typed Characters found (OCR)")
             options = QtWidgets.QDialogButtonBox.Close
