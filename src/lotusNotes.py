@@ -369,9 +369,31 @@ class UINoteWindow(QWidget):
         self.canvas_window = CanvasWindow()
         self.canvas_window.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.layout = QVBoxLayout()
-        # heading = QtWidgets.QLineEdit()
-        # heading.setStyleSheet("border: 0px")
-        # self.layout.addWidget(heading)
+
+
+        self.heading_title = QtWidgets.QLineEdit()
+        title_font = QtGui.QFont("Times New Roman", 20)
+        self.heading_title.setFont(title_font)
+        self.heading_title.setStyleSheet("border: 0px")
+        self.layout.addWidget(self.heading_title)
+
+        subheading_font = QtGui.QFont("Times New Roman", 15)
+        self.heading_name = QtWidgets.QLineEdit()
+        self.heading_name.setFont(subheading_font)
+        self.heading_name.setStyleSheet("border: 0px")
+        self.layout.addWidget(self.heading_name)
+
+        self.heading_course = QtWidgets.QLineEdit()
+        self.heading_course.setFont(subheading_font)
+        self.heading_course.setStyleSheet("border: 0px")
+        self.layout.addWidget(self.heading_course)
+
+        self.heading_date = QtWidgets.QLineEdit()
+        self.heading_date.setFont(subheading_font)
+        self.heading_date.setStyleSheet("border: 0px")
+        self.layout.addWidget(self.heading_date)
+
+
         self.layout.setContentsMargins(0,0,0,0)
         self.layout.setSpacing(0)
         self.layout.setAlignment(Qt.AlignTop)
@@ -584,29 +606,33 @@ class UINoteWindow(QWidget):
         # time = datetime.now()
         date_str = today.strftime("%B %d, %Y")
         # time_str = time.strftime("%H:%M:%S")
-        painter = QtGui.QPainter(self.canvas_window.label.canvas)
-        rect = QtCore.QRect(8, 20, 750, 150)
-        painter.fillRect(rect, Qt.white)
-        painter.setFont(self.font)
-        font_size = self.font.pointSize()
-        x = 0
-        if len(title.text()) != 0:
-            painter.drawText(10, 30 + font_size, title.text())
-        else:
-            x = -25
-        if len(name.text()) != 0:
-            painter.drawText(10, 55 + font_size + x, name.text())
-        else:
-            x = x - 25
-        painter.setPen(Qt.black)
-        self.add_date = time_checkbox.isChecked()
-        if self.add_date:
-            painter.drawText(10, 80 + font_size + x, date_str)
-        else:
-            x = x - 25
-        self.course = course
-        if course.currentText() != "---":
-            painter.drawText(10, 105 + font_size + x, course.currentText())
+        self.heading_title.setText(title.text())
+        self.heading_name.setText(name.text())
+        self.heading_course.setText(course.currentText())
+        self.heading_date.setText(date_str)
+        # painter = QtGui.QPainter(self.canvas_window.label.canvas)
+        # rect = QtCore.QRect(8, 20, 750, 150)
+        # painter.fillRect(rect, Qt.white)
+        # painter.setFont(self.font)
+        # font_size = self.font.pointSize()
+        # x = 0
+        # if len(title.text()) != 0:
+        #     painter.drawText(10, 30 + font_size, title.text())
+        # else:
+        #     x = -25
+        # if len(name.text()) != 0:
+        #     painter.drawText(10, 55 + font_size + x, name.text())
+        # else:
+        #     x = x - 25
+        # painter.setPen(Qt.black)
+        # self.add_date = time_checkbox.isChecked()
+        # if self.add_date:
+        #     painter.drawText(10, 80 + font_size + x, date_str)
+        # else:
+        #     x = x - 25
+        # self.course = course
+        # if course.currentText() != "---":
+        #     painter.drawText(10, 105 + font_size + x, course.currentText())
         dialog.close()
         self.update()
         return
