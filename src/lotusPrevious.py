@@ -53,7 +53,7 @@ class UIPreviousWindow(QWidget):
             self.buttons = {}
             if not self.set_paths:
                 for i in range(len(self.directories)):
-                    self.buttons[self.directories[i]] = QPushButton()
+                    self.buttons[self.directories[i]] = QPushButton(self.directories[i], self)
                     self.buttons[self.directories[i]].setIcon(QIcon(QPixmap(self.directories[i].strip())))
                     self.buttons[self.directories[i]].setIconSize(QSize(100,100))
                     self.layout.addWidget(self.buttons[self.directories[i]], i, 1)
