@@ -9,7 +9,7 @@
 ########### PyQT5 imports ###########
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtGui import QPixmap, QIcon, QImage
 from PyQt5.QtWidgets import QPushButton, QWidget
 from PyQt5.uic.properties import QtCore
 
@@ -52,16 +52,14 @@ class UIPreviousWindow(QWidget):
         else:
             self.buttons = {}
             if not self.set_paths:
-                print("Paths are not on")
                 for i in range(len(self.directories)):
                     self.buttons[self.directories[i]] = QPushButton()
-                    self.buttons[self.directories[i]].setIcon(QIcon(QPixmap(self.directories[i])))
-                    self.buttons[self.directories[i]].setIconSize(QSize(100,100));
+                    self.buttons[self.directories[i]].setIcon(QIcon(QPixmap(self.directories[i].strip())))
+                    self.buttons[self.directories[i]].setIconSize(QSize(100,100))
                     self.layout.addWidget(self.buttons[self.directories[i]], i, 1)
                 self.setLayout(self.layout)
 
             else:
-                print("Paths are on")
                 for i in range(len(self.directories)):
                     self.buttons[self.directories[i]] = QPushButton(self.directories[i], self)
                     self.layout.addWidget(self.buttons[self.directories[i]], i, 1)
