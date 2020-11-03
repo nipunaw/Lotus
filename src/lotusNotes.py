@@ -16,7 +16,7 @@ import pytesseract
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt, pyqtSignal, QSize, QPoint, QRect
-from PyQt5.QtGui import QRegion, QColor
+from PyQt5.QtGui import QRegion, QColor, QPainter
 from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QMessageBox, QScrollArea, QGridLayout, QHBoxLayout, \
     QVBoxLayout, QSizePolicy
 
@@ -85,42 +85,40 @@ class Canvas(QLabel):
         self.cursor = QtGui.QCursor()
         self.cursor.setShape(Qt.CrossCursor)
         self.setCursor(self.cursor)
+        # Painters
+        self.painter = QPainter()
+        self.layer_painter = QPainter()
 
-    def resizeCanvas(self, size):
-        for i in range (1, len(self.activeLayers)):
-            temp = self.activeLayers[i]
+    def resizeLayer(self, i, size, active=True):
+        temp = self.activeLayers[i] if active else self.inactiveLayers[i]
+        if temp.size() == size:
+            return
+        if active:
             self.activeLayers[i] = QtGui.QPixmap(size)
-            self.activeLayers[i].fill(Qt.transparent)
-            painter_layer = QtGui.QPainter(self.activeLayers[i])
-            painter_layer.drawPixmap(temp.rect(), temp, temp.rect())
-            painter_layer.end()
-
-        for i in range (0, len(self.inactiveLayers)):
+            self.activeLayers[i].fill(Qt.transparent if i != 0 else Qt.white)
+            self.layer_painter.begin(self.activeLayers[i])
+        else:
             temp = self.inactiveLayers[i]
             self.inactiveLayers[i] = QtGui.QPixmap(size)
             self.inactiveLayers[i].fill(Qt.transparent)
-            painter_layer = QtGui.QPainter(self.inactiveLayers[i])
-            painter_layer.drawPixmap(temp.rect(), temp, temp.rect())
-            painter_layer.end()
+            self.layer_painter.begin(self.inactiveLayers[i])
+        self.layer_painter.drawPixmap(temp.rect(), temp, temp.rect())
+        self.layer_painter.end()
 
+    def resizeCanvas(self, size):
         temp = self.activeLayers[0]
         self.activeLayers[0] = QtGui.QPixmap(size)
         self.activeLayers[0].fill(Qt.white)
-        painter = QtGui.QPainter(self.activeLayers[0])
-        painter.drawPixmap(temp.rect(), temp, temp.rect())
-        painter.end()
-
-        # self.update()
-
-        painter_layer = QtGui.QPainter(self.activeLayers[0])
-        for i in range(1, len(self.activeLayers)):
-            painter_layer.drawPixmap(self.rect(), self.activeLayers[i])
-        painter_layer.end()
-
+        self.painter = QtGui.QPainter(self.activeLayers[0])
+        self.painter.drawPixmap(temp.rect(), temp, temp.rect())
         self.setPixmap(self.activeLayers[0])
+        self.painter.end()
+
+        for i in range (0, len(self.activeLayers)):
+            self.resizeLayer(i, self.size())
+
         if self.last_save is None:
             self.last_save = self.activeLayers[0]
-            self.hasChanged()
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         if self.activeLayers[0].size() != self.size():
@@ -133,15 +131,15 @@ class Canvas(QLabel):
             new_canvas_layer = QtGui.QPixmap(self.size())
             new_canvas_layer.fill(Qt.transparent)
 
-            painter = QtGui.QPainter(new_canvas_layer)
-            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-            painter.setPen(self.current_utensil.pen())
-            painter.drawPoint(event.pos())
+            self.painter.begin(new_canvas_layer)
+            self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            self.painter.setPen(self.current_utensil.pen())
+            self.painter.drawPoint(event.pos())
 
             self.activeLayers.append(new_canvas_layer)
             self.last_point_draw = event.pos()
             self.update()
-            painter.end()
+            self.painter.end()
         elif event.button() == Qt.MiddleButton:
             self.setCursor(Qt.ClosedHandCursor)
             self.last_point_scroll = event.globalPos()
@@ -151,17 +149,25 @@ class Canvas(QLabel):
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         if event.buttons() and Qt.LeftButton and self.utensil_press:
-            if self.width() - event.pos().x() < 20:
-                self.resizeCanvas(QSize(self.width() + 100, self.height()))
-            if self.height() - event.pos().y() < 20:
+            x = self.width() - event.pos().x()
+            y = self.height() - event.pos().y()
+            if x < 200:
+                if y < 200:
+                    self.resizeLayer(-1, QSize(self.width() + 100, self.height() + 100))
+                    self.resizeCanvas(QSize(self.width() + 100, self.height()))
+                else:
+                    self.resizeLayer(-1, QSize(self.width() + 100, self.height()))
+                    self.resizeCanvas(QSize(self.width() + 100, self.height()))
+            elif y < 200:
+                self.resizeLayer(-1, QSize(self.width(), self.height() + 100))
                 self.resizeCanvas(QSize(self.width(), self.height() + 100))
-            painter = QtGui.QPainter(self.activeLayers[len(self.activeLayers) - 1])
-            painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-            painter.setPen(self.current_utensil.pen())
-            painter.drawLine(self.last_point_draw, event.pos())
+            self.painter.begin(self.activeLayers[len(self.activeLayers) - 1])
+            self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            self.painter.setPen(self.current_utensil.pen())
+            self.painter.drawLine(self.last_point_draw, event.pos())
             self.last_point_draw = event.pos()
             self.update()
-            painter.end()
+            self.painter.end()
         elif event.buttons() and Qt.MiddleButton and self.mouse_button_scrolling:
             offset = self.last_point_scroll - event.globalPos()
             self.last_point_scroll = event.globalPos()
@@ -181,17 +187,12 @@ class Canvas(QLabel):
 
     def paintEvent(self, event):
         self.activeLayers[0].fill(Qt.white)
-        painter_layer = QtGui.QPainter(self.activeLayers[0])
+        self.layer_painter.begin(self.activeLayers[0])
         for i in range(1, len(self.activeLayers)):
-            painter_layer.drawPixmap(self.rect(), self.activeLayers[i])
-        painter_layer.end()
-
-        painter = QtGui.QPainter(self)
-        painter.drawPixmap(self.rect(), self.activeLayers[0])
-        #for canvas in self.canvasLayers:
-        #    painter.drawPixmap(self.rect(), canvas)
-        painter.end()
-        self.hasChanged()
+            self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[i])
+        self.layer_painter.end()
+        self.setPixmap(self.activeLayers[0])
+        super(Canvas, self).paintEvent(event)
 
     def hasChanged(self):
         if self.last_save is None:
@@ -210,11 +211,12 @@ class Canvas(QLabel):
         # Reset canvas
         # self.numLayers += 1
         # self.activePointer += 1
-        clear_canvas_layer = QtGui.QPixmap(self.minimumSize())
-        clear_canvas_layer.fill(Qt.white)
-        self.activeLayers.append(clear_canvas_layer)
+
         #self.activeLayers.append(True)
         #self.master_canvas_layer.fill(Qt.white)
+        clear_canvas_layer = QtGui.QPixmap(self.size())
+        clear_canvas_layer.fill(Qt.white)
+        self.activeLayers.append(clear_canvas_layer)
         self.resizeCanvas(self.minimumSize())
         self.update()
         # Reset back to pen tool
@@ -239,7 +241,6 @@ class Canvas(QLabel):
         # painter_layer.end()
 
         self.update()
-        self.hasChanged()
 
     def redo(self):
         if len(self.inactiveLayers) > 0:
@@ -257,13 +258,12 @@ class Canvas(QLabel):
         # painter_layer.end()
 
         self.update()
-        self.hasChanged()
 
     def loadImage(self, file_path):
         image_pixmap = QtGui.QPixmap(file_path)
         canvas = QtGui.QPixmap(self.minimumSize().expandedTo(image_pixmap.size()))
-        painter = QtGui.QPainter(canvas)
-        painter.drawPixmap(canvas.rect(), image_pixmap, image_pixmap.rect())
+        self.painter.begin(canvas)
+        self.painter.drawPixmap(canvas.rect(), image_pixmap, image_pixmap.rect())
         self.activeLayers[0] = canvas
         self.setPixmap(canvas)
         self.last_save = self.activeLayers[0]
