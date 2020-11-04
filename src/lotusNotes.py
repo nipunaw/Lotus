@@ -110,15 +110,16 @@ class Canvas(QLabel):
         self.activeLayers[0] = QtGui.QPixmap(size)
         self.activeLayers[0].fill(Qt.white)
         self.painter = QtGui.QPainter(self.activeLayers[0])
-        self.painter.drawPixmap(temp.rect(), temp, temp.rect())
-        self.setPixmap(self.activeLayers[0])
+        self.painter.drawPixmap(self.activeLayers[0].rect(), temp, temp.rect())
         self.painter.end()
+        self.setPixmap(self.activeLayers[0])
 
         for i in range (0, len(self.activeLayers)):
             self.resizeLayer(i, self.size())
 
         if self.last_save is None:
-            self.last_save = self.activeLayers[0]
+            self.startSize = self.size()
+            self.last_save = self.activeLayers[0].toImage()
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         if self.activeLayers[0].size() != self.size():
@@ -197,11 +198,11 @@ class Canvas(QLabel):
     def hasChanged(self):
         if self.last_save is None:
             return False
-        return not self.pixmap().toImage() == self.last_save.toImage()
+        return not self.pixmap().toImage() == self.last_save
 
     def save(self, file_path):
         self.activeLayers[0].save(file_path)
-        self.last_save = self.activeLayers[0]
+        self.last_save = self.activeLayers[0].toImage()
 
     def setUtensil(self, utensil : Utensil):
         self.current_utensil = utensil
@@ -209,64 +210,37 @@ class Canvas(QLabel):
     # Button click handling
     def clear(self):
         # Reset canvas
-        # self.numLayers += 1
-        # self.activePointer += 1
-
-        #self.activeLayers.append(True)
-        #self.master_canvas_layer.fill(Qt.white)
         clear_canvas_layer = QtGui.QPixmap(self.size())
         clear_canvas_layer.fill(Qt.white)
         self.activeLayers.append(clear_canvas_layer)
-        self.resizeCanvas(self.minimumSize())
         self.update()
+        self.resizeCanvas(self.startSize)
         # Reset back to pen tool
         self.setUtensil(Utensils.PEN)
 
     def undo(self):
         if len(self.activeLayers) > 1:
             self.inactiveLayers.append(self.activeLayers.pop())
-
-        # if self.activePointer - 1 > 0:
-        #     print("Inctive Layer: "  + str(self.activePointer))
-        #     self.activeLayers[self.activePointer - 1] = False
-        #     self.activePointer -= 1
-        #
-        # self.canvasLayers[0].fill(Qt.white)
-        # painter_layer = QtGui.QPainter(self.canvasLayers[0])
-        # for i in range(1, len(self.canvasLayers)):
-        #     if self.activeLayers[i]:
-        #         print("Active: 1")
-        #         print("Active: "  + str(i + 1))
-        #         painter_layer.drawPixmap(self.rect(), self.canvasLayers[i])
-        # painter_layer.end()
-
         self.update()
 
     def redo(self):
         if len(self.inactiveLayers) > 0:
             self.activeLayers.append(self.inactiveLayers.pop())
-
-        # if self.activePointer < self.numLayers:
-        #     self.activeLayers[self.activePointer] = True
-        #     self.activePointer += 1
-        #
-        # self.canvasLayers[0].fill(Qt.white)
-        # painter_layer = QtGui.QPainter(self.canvasLayers[0])
-        # for i in range(1, len(self.canvasLayers)):
-        #     if self.activeLayers[i]:
-        #         painter_layer.drawPixmap(self.rect(), self.canvasLayers[i])
-        # painter_layer.end()
-
         self.update()
 
     def loadImage(self, file_path):
         image_pixmap = QtGui.QPixmap(file_path)
         canvas = QtGui.QPixmap(self.minimumSize().expandedTo(image_pixmap.size()))
+        blank = QtGui.QPixmap(canvas.size())
+        blank.fill(Qt.white)
+        self.activeLayers = [blank, canvas]
+        self.inactiveLayers.clear()
         self.painter.begin(canvas)
         self.painter.drawPixmap(canvas.rect(), image_pixmap, image_pixmap.rect())
-        self.activeLayers[0] = canvas
-        self.setPixmap(canvas)
-        self.last_save = self.activeLayers[0]
+        self.painter.end()
+        self.resizeCanvas(self.activeLayers[0].size())
+        self.update()
+        self.last_save = self.activeLayers[0].toImage()
 
 class CanvasWindow(QScrollArea):
     def __init__(self):
@@ -274,7 +248,6 @@ class CanvasWindow(QScrollArea):
         self.setWidgetResizable(True)
         self.layout = QVBoxLayout()
         self.label = Canvas()
-        self.label.setMinimumSize(self.layout.minimumSize())
         self.label.scrolled.connect(self.scrollForLabel)
         self.label.mouse_grab.connect(self.mouseGrabScroll)
         self.layout.setContentsMargins(0,0,0,0)
@@ -649,7 +622,6 @@ class UINoteWindow(QWidget):
             self.canvas_window.label.loadImage(file_path)
 
     def ocr(self):
-        self.canvas_window.label.current_canvas_image = self.canvas_window.label.canvas.toImage()
         if self.canvas_window.label.hasChanged() or self.file_path == "":
             self.savePopup()
         if not self.canvas_window.label.hasChanged():
