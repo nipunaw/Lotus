@@ -14,4 +14,6 @@ assets = {
     "previousNotesDarker": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/previousNotesDarker.png'),
     "schedule": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/schedule.png'),
     "scheduleDarker": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/scheduleDarker.png'),
+    "time_date" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/time_date.png'),
+    "lato" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/Lato-Regular.ttf')
 }
