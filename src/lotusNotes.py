@@ -16,9 +16,9 @@ import pytesseract
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt, pyqtSignal, QSize, QPoint, QRect
-from PyQt5.QtGui import QRegion, QColor, QPainter
+from PyQt5.QtGui import QRegion, QColor, QPainter, QIcon, QPixmap
 from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QMessageBox, QScrollArea, QGridLayout, QHBoxLayout, \
-    QVBoxLayout, QSizePolicy
+    QVBoxLayout, QSizePolicy, QAction
 
 from src.constants import CONFIG_FILE, DIRECTORY_FILE, SCHEDULE_FILE_PATH
 
@@ -299,31 +299,45 @@ class UINoteWindow(QWidget):
         ########### Menu Bar ###########
         self.menu_bar = QtWidgets.QMenuBar(self)
         self.file_menu = self.menu_bar.addMenu("File")
-        self.template_menu = self.menu_bar.addMenu("Template")
-        self.settings_menu = self.menu_bar.addMenu("Settings")
-        self.save_option = QtWidgets.QAction("Save", self)
-        self.save_option.setShortcut("Ctrl+S")
-        self.save_as_option = QtWidgets.QAction("Save As" if not scheduled else "Export", self)
-        self.save_as_option.setShortcut("F12")
-        self.heading_option = QtWidgets.QAction("Add/Edit Heading", self)
-        self.heading_option.setShortcut("Ctrl+H")
-        self.settings_option = QtWidgets.QAction("Font")
-        self.settings_menu.addAction(self.settings_option)
-        self.file_menu.addAction(self.save_option)
-        self.file_menu.addAction(self.save_as_option)
-        self.template_menu.addAction(self.heading_option)
-        self.save_option.triggered.connect(self.save)
-        self.save_as_option.triggered.connect(self.save_as)
-        self.heading_option.triggered.connect(self.heading)
-        self.settings_option.triggered.connect(self.settings)
+
+        # Open
         self.open_option = QtWidgets.QAction("Open", self)
         self.open_option.setShortcut("Ctrl+O")
+        self.open_option.triggered.connect(lambda state: self.open())
         self.file_menu.addAction(self.open_option)
-        self.open_option.triggered.connect(self.open)
-        self.ocr_menu = self.menu_bar.addMenu("OCR")
+
+        self.open_recent_option = QtWidgets.QMenu("Open Recent", self)
+        if self.update_open_recent_menu():
+            self.file_menu.addMenu(self.open_recent_option)
+
+        # Headings
+        self.heading_option = QtWidgets.QAction("Add/Edit Heading", self)
+        self.heading_option.setShortcut("Ctrl+H")
+        self.heading_option.triggered.connect(self.heading)
+        self.template_menu = self.menu_bar.addMenu("Template")
+        self.template_menu.addAction(self.heading_option)
+
+        self.settings_option = QtWidgets.QAction("Font")
+        self.settings_option.triggered.connect(self.settings)
+        self.settings_menu = self.menu_bar.addMenu("Settings")
+        self.settings_menu.addAction(self.settings_option)
+
+        # Saving
+        self.save_option = QtWidgets.QAction("Save", self)
+        self.save_option.setShortcut("Ctrl+S")
+        self.save_option.triggered.connect(self.save)
+        self.file_menu.addAction(self.save_option)
+
+        self.save_as_option = QtWidgets.QAction("Save As" if not scheduled else "Export", self)
+        self.save_as_option.setShortcut("F12")
+        self.save_as_option.triggered.connect(self.save_as)
+        self.file_menu.addAction(self.save_as_option)
+
+        # OCR
         self.find_ocr = QtWidgets.QAction("Find Typed/Neat Text", self)
-        self.ocr_menu.addAction(self.find_ocr)
         self.find_ocr.triggered.connect(self.ocr)
+        self.ocr_menu = self.menu_bar.addMenu("OCR")
+        self.ocr_menu.addAction(self.find_ocr)
 
         ########### Buttons ###########
         # Handled by resizeEvent
@@ -460,6 +474,7 @@ class UINoteWindow(QWidget):
             self.save_as()
         else:
             self.canvas_window.label.save(self.file_path)
+        self.update_open_recent_menu()
 
     def save_as(self):
         self.file_path_2, _ = QtWidgets.QFileDialog.getSaveFileName(self,
@@ -492,6 +507,7 @@ class UINoteWindow(QWidget):
         except Exception as e:
             with open(DIRECTORY_FILE, "w+") as f:
                 f.write(self.file_path + "\n")
+        self.update_open_recent_menu()
 
         # Saving canvas
         self.canvas_window.label.save(self.file_path)
@@ -545,7 +561,6 @@ class UINoteWindow(QWidget):
         self.update()
 
     def accept_header(self, title, name, course, time_checkbox, dialog):
-
         if len(title.text()) == 0 and len(name.text()) == 0 and course.currentText() == "---" and (not time_checkbox.isChecked()):
             #prompt to add at least one field
             error = QtWidgets.QMessageBox()
@@ -594,15 +609,36 @@ class UINoteWindow(QWidget):
         time_checkbox.setChecked(self.add_date)
         self.accept_header(self.title, self.name, self.course, time_checkbox, dialog)
 
-    def open(self):
+    def open(self, file_path:str=None):
         if self.canvas_window.label.hasChanged():
             self.savePopup()
-        self.file_path_2, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home", "JPG (*.jpg);;PNG (*.png)")
-        if self.file_path_2 == "":
-            return
-        self.file_path = self.file_path_2
+        if not file_path:
+            self.file_path_2, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home", "JPG (*.jpg);;PNG (*.png)")
+            if self.file_path_2 == "":
+                return
+            self.file_path = self.file_path_2
+        else:
+            self.file_path = file_path
         self.open_directory(self.file_path)
         self.setWindowTitle(self.file_path)
+
+    def update_open_recent_menu(self):
+        try:
+            with open(DIRECTORY_FILE, "r") as f:
+                directories = f.readlines()
+            f.close()
+        except Exception as e:
+            return False
+        if len(directories) == 0:
+            return False
+        else:
+            directories.reverse()
+            self.open_recent_option.clear()
+            for i in range(len(directories)):
+                action = QAction(directories[i], self.open_recent_option)
+                action.triggered.connect(lambda state, x=directories[i].strip(): self.open(x))
+                self.open_recent_option.addAction(action)
+            return True
 
     def open_directory(self, file_path):
         if not os.path.isfile(file_path):

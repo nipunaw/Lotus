@@ -8,14 +8,18 @@
 
 ########### PyQT5 imports ###########
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import QSize
+from PyQt5.QtGui import QPixmap, QIcon, QImage
 from PyQt5.QtWidgets import QPushButton, QWidget
+from PyQt5.uic.properties import QtCore
+
 from src.constants import DIRECTORY_FILE
 
 class UIPreviousWindow(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, set_paths, parent=None):
         super(UIPreviousWindow, self).__init__(parent)
+        self.set_paths = set_paths
         # Creates file if not created
-
         try:
             file = open(DIRECTORY_FILE, 'r')
         except IOError:
@@ -47,8 +51,16 @@ class UIPreviousWindow(QWidget):
             self.layout.addWidget(self.no_notes_text)
         else:
             self.buttons = {}
-            for i in range(len(self.directories)):
-                self.buttons[self.directories[i]] = QPushButton(self.directories[i], self)
-                self.layout.addWidget(self.buttons[self.directories[i]], i,1)
-        self.setLayout(self.layout)
+            if not self.set_paths:
+                for i in range(len(self.directories)):
+                    self.buttons[self.directories[i]] = QPushButton(self.directories[i], self)
+                    self.buttons[self.directories[i]].setIcon(QIcon(QPixmap(self.directories[i].strip())))
+                    self.buttons[self.directories[i]].setIconSize(QSize(100,100))
+                    self.layout.addWidget(self.buttons[self.directories[i]], i, 1)
+                self.setLayout(self.layout)
 
+            else:
+                for i in range(len(self.directories)):
+                    self.buttons[self.directories[i]] = QPushButton(self.directories[i], self)
+                    self.layout.addWidget(self.buttons[self.directories[i]], i, 1)
+                self.setLayout(self.layout)
