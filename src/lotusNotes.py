@@ -22,6 +22,22 @@ from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QMessageBox, QScrollAr
 
 from src.constants import CONFIG_FILE, DIRECTORY_FILE, SCHEDULE_FILE_PATH
 
+def pen_size():
+    config = configparser.ConfigParser()
+    config.read(CONFIG_FILE)
+    return int(config['DEFAULT']['pen_size'])
+
+def eraser_size():
+    config = configparser.ConfigParser()
+    config.read(CONFIG_FILE)
+    return int(config['DEFAULT']['eraser_size'])
+
+def set_default_pen_width(width):
+    Utensils.PEN.radius = width
+
+def set_default_eraser_width(width):
+    Utensils.ERASER.radius = width
+
 class Utensil:
     def __init__(self, color : QColor, radius : int,
                  brush_style : Qt.PenStyle = Qt.SolidLine,
@@ -52,8 +68,8 @@ class Utensil:
         return pen
 
 class Utensils(Utensil, Enum):
-    PEN = (Qt.black, 4)
-    ERASER = (Qt.white, 4)
+    PEN = (Qt.black, pen_size())
+    ERASER = (Qt.white, eraser_size())
 
 class Canvas(QLabel):
     scrolled = pyqtSignal(QtGui.QWheelEvent)
