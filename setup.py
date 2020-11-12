@@ -11,7 +11,7 @@ setuptools.setup(
     author="Nipuna Weerapperuma, Spencer Bass, David Jaworski, Carlos Morales-Diaz, & Hannah Williams",
     description="Lotus - A hand-written notes application with scheduler.",
     url="https://github.com/nipunaw/Lotus/tree/design-prototype",
-    install_requires=["PyQt5", "wsl", "wheel", "pytesseract"],
+    install_requires=["PyQt5", "wsl", "wheel", "pytesseract", "opencv-python"],
     include_package_data=True,
     entry_points = {
         'console_scripts': ['lotus = src.command_line:main'],
