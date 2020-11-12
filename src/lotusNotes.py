@@ -13,6 +13,7 @@ import os
 from datetime import date
 from enum import Enum
 import pytesseract
+import cv2
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt, pyqtSignal, QSize, QPoint, QRect
@@ -687,7 +688,16 @@ class UINoteWindow(QWidget):
         if self.canvas_window.label.hasChanged() or self.file_path == "":
             self.savePopup()
         if not self.canvas_window.label.hasChanged():
-            ocr_findings = pytesseract.image_to_string(Image.open(self.file_path))
+            # image pre-processing
+            img = cv2.imread(self.file_path, cv2.IMREAD_GRAYSCALE)
+            img = cv2.resize(img, None, fx=0.3, fy=0.3)
+            thresh = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]
+            gauss = cv2.GaussianBlur(thresh, (3, 3), 0)
+            custom_config = r'-l eng --oem 3 --psm 6 '
+
+            ocr_findings = pytesseract.image_to_string(gauss, config=custom_config)
+            #ocr_findings = pytesseract.image_to_string(Image.open(self.file_path))
+
             ocr_prompt = QtWidgets.QDialog(self)
             ocr_prompt.setWindowTitle("Typed Characters found (OCR)")
             options = QtWidgets.QDialogButtonBox.Close
