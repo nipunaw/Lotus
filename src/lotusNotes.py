@@ -20,7 +20,9 @@ from PyQt5.QtGui import QRegion, QColor, QPainter, QIcon, QPixmap
 from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QMessageBox, QScrollArea, QGridLayout, QHBoxLayout, \
     QVBoxLayout, QSizePolicy, QAction
 
-from src.constants import CONFIG_FILE, DIRECTORY_FILE, SCHEDULE_FILE_PATH
+from src.constants import CONFIG_FILE, DIRECTORY_FILE, SCHEDULE_FILE_PATH, assets
+from src.lotusButtons import ToolButton
+
 
 def pen_size():
     config = configparser.ConfigParser()
@@ -32,6 +34,9 @@ def eraser_size():
     config.read(CONFIG_FILE)
     return int(config['DEFAULT']['eraser_size'])
 
+def highlighter_size():
+    return 30
+
 def set_default_pen_width(width):
     Utensils.PEN.radius = width
 
@@ -42,11 +47,13 @@ class Utensil:
     def __init__(self, color : QColor, radius : int,
                  brush_style : Qt.PenStyle = Qt.SolidLine,
                  cap_style : Qt.PenCapStyle = Qt.RoundCap,
-                 join_style : Qt.PenJoinStyle = Qt.RoundJoin):
+                 join_style : Qt.PenJoinStyle = Qt.RoundJoin,
+                 fill_style : Qt.BrushStyle = Qt.SolidPattern):
         self.maxWidth = 50
         self.color = color
         self.radius = radius
         self.brush_style = brush_style
+        self.fill_style = fill_style
         self.cap_style = cap_style
         self.join_style = join_style
 
@@ -67,11 +74,19 @@ class Utensil:
         pen.setJoinStyle(self.join_style)
         return pen
 
+    def highlighter(self):
+        highlighter = QtGui.QBrush()
+        highlighter.setStyle(self.fill_style)
+        highlighter.setColor(self.color)
+        return highlighter
+
 class Utensils(Utensil, Enum):
     PEN = (Qt.black, pen_size())
     ERASER = (Qt.white, eraser_size())
+    HIGHLIGHTER = (QColor(248, 222, 126, 80), highlighter_size(), Qt.NoPen, Qt.SquareCap, Qt.MiterJoin, Qt.SolidPattern)
 
 class Canvas(QLabel):
+    layer_change = pyqtSignal()
     scrolled = pyqtSignal(QtGui.QWheelEvent)
     mouse_grab = pyqtSignal(QPoint)
     def __init__(self):
@@ -101,6 +116,9 @@ class Canvas(QLabel):
         self.cursor = QtGui.QCursor()
         self.cursor.setShape(Qt.CrossCursor)
         self.setCursor(self.cursor)
+        # Drawing path
+        self.drawing_path_layers = []
+        #self.drawing_path = QtGui.QPainterPath()
         # Painters
         self.painter = QPainter()
         self.layer_painter = QPainter()
@@ -151,9 +169,14 @@ class Canvas(QLabel):
             self.painter.begin(new_canvas_layer)
             self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
             self.painter.setPen(self.current_utensil.pen())
-            self.painter.drawPoint(event.pos())
+            #self.painter.drawPoint(event.pos())
+
 
             self.activeLayers.append(new_canvas_layer)
+            self.inactiveLayers.clear()
+
+            self.layer_change.emit()
+
             self.last_point_draw = event.pos()
             self.update()
             self.painter.end()
@@ -180,9 +203,11 @@ class Canvas(QLabel):
                 self.resizeCanvas(QSize(self.width(), self.height() + 100))
             self.painter.begin(self.activeLayers[len(self.activeLayers) - 1])
             self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            self.painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
             self.painter.setPen(self.current_utensil.pen())
-            self.painter.drawLine(self.last_point_draw, event.pos())
-            self.last_point_draw = event.pos()
+            if not self.current_utensil == Utensils.HIGHLIGHTER:
+                self.painter.drawLine(self.last_point_draw, event.pos())
+                self.last_point_draw = event.pos()
             self.update()
             self.painter.end()
         elif event.buttons() and Qt.MiddleButton and self.mouse_button_scrolling:
@@ -194,10 +219,109 @@ class Canvas(QLabel):
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
         if event.button() == Qt.LeftButton:
+            if self.current_utensil == Utensils.HIGHLIGHTER:
+                self.painter.begin(self.activeLayers[len(self.activeLayers) - 1])
+                self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+                self.painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
+                self.painter.setPen(self.current_utensil.pen())
+                self.painter.setBrush(self.current_utensil.highlighter())
+                self.painter.drawRect(self.last_point_draw.x(), self.last_point_draw.y(), (event.pos().x() -self.last_point_draw.x()), (event.pos().y() -self.last_point_draw.y()))
+                self.update()
+                self.painter.end()
             self.utensil_press = False
+
         elif event.button() == Qt.MiddleButton:
             self.setCursor(self.cursor)
             self.mouse_button_scrolling = False
+
+
+    # def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+    #     if event.button() == Qt.LeftButton:
+    #         self.utensil_press = True
+    #         # self.numLayers += 1
+    #         new_canvas_layer = QtGui.QPixmap(self.size())
+    #         new_canvas_layer.fill(Qt.transparent)
+    #
+    #         #self.painter.begin(new_canvas_layer)
+    #         #self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    #         #self.painter.setPen(self.current_utensil.pen())
+    #
+    #         #self.drawing_path_part = QtGui.QPainterPath()
+    #         # drawing_path = QtGui.QPainterPath()
+    #         # drawing_path.moveTo(event.pos())
+    #         self.drawing_path_part = QtGui.QPainterPath()
+    #         self.drawing_path_part.moveTo(event.pos())
+    #         # self.drawing_path_layers.append(drawing_path)
+    #
+    #         #self.painter.drawPoint(event.pos())
+    #
+    #         self.activeLayers.append(new_canvas_layer)
+    #         self.last_point_draw = event.pos()
+    #         self.update()
+    #         # self.painter.end()
+    #     elif event.button() == Qt.MiddleButton:
+    #         self.setCursor(Qt.ClosedHandCursor)
+    #         self.last_point_scroll = event.globalPos()
+    #         self.mouse_button_scrolling = True
+    #     else:
+    #         super(Canvas, self).mousePressEvent(event)
+    #
+    # def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
+    #     if event.buttons() and Qt.LeftButton and self.utensil_press:
+    #         x = self.width() - event.pos().x()
+    #         y = self.height() - event.pos().y()
+    #         if x < 200:
+    #             if y < 200:
+    #                 self.resizeLayer(-1, QSize(self.width() + 100, self.height() + 100))
+    #                 self.resizeCanvas(QSize(self.width() + 100, self.height()))
+    #             else:
+    #                 self.resizeLayer(-1, QSize(self.width() + 100, self.height()))
+    #                 self.resizeCanvas(QSize(self.width() + 100, self.height()))
+    #         elif y < 200:
+    #             self.resizeLayer(-1, QSize(self.width(), self.height() + 100))
+    #             self.resizeCanvas(QSize(self.width(), self.height() + 100))
+    #         #self.painter.begin(self.activeLayers[len(self.activeLayers) - 1])
+    #         #self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    #
+    #         #self.painter.setPen(self.current_utensil.pen())
+    #         # self.painter.drawLine(self.last_point_draw, event.pos())
+    #         #self.drawing_path_part.closeSubpath()
+    #         self.drawing_path_part.lineTo(event.pos())
+    #         self.painter.begin(self.activeLayers[len(self.activeLayers) - 1])
+    #         #self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    #         self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    #         self.painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
+    #         self.painter.setPen(self.current_utensil.pen())
+    #         #self.drawing_path_layers[len(self.drawing_path_layers)-1].addPath(self.drawing_path_part)
+    #         self.painter.drawPath(self.drawing_path_part) #self.drawing_path_layers[len(self.drawing_path_layers)-1]
+    #         #self.drawing_path_part.moveTo(event.pos())
+    #         # self.drawingPath = None
+    #         self.update()
+    #         self.painter.end()
+    #
+    #         # self.last_point_draw = event.pos()
+    #         # self.update()
+    #         #self.painter.end()
+    #     elif event.buttons() and Qt.MiddleButton and self.mouse_button_scrolling:
+    #         offset = self.last_point_scroll - event.globalPos()
+    #         self.last_point_scroll = event.globalPos()
+    #         self.mouse_grab.emit(offset)
+    #     else:
+    #         super(Canvas, self).mouseMoveEvent(event)
+    #
+    # def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
+    #     if event.button() == Qt.LeftButton:
+    #         self.utensil_press = False
+    #         # self.painter.begin(self.activeLayers[len(self.activeLayers) - 1])
+    #         # self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    #         # self.painter.setPen(self.current_utensil.pen())
+    #         # self.painter.drawPath(self.drawingPath)
+    #         # #self.drawingPath = None
+    #         # self.update()
+    #         # self.painter.end()
+    #     elif event.button() == Qt.MiddleButton:
+    #         self.setCursor(self.cursor)
+    #         self.mouse_button_scrolling = False
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         self.scrolled.emit(event)
@@ -205,6 +329,8 @@ class Canvas(QLabel):
     def paintEvent(self, event):
         self.activeLayers[0].fill(Qt.white)
         self.layer_painter.begin(self.activeLayers[0])
+        self.layer_painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+        self.layer_painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
         for i in range(1, len(self.activeLayers)):
             self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[i])
         self.layer_painter.end()
@@ -231,17 +357,19 @@ class Canvas(QLabel):
         self.activeLayers.append(clear_canvas_layer)
         self.update()
         self.resizeCanvas(self.startSize)
-        # Reset back to pen tool
-        self.setUtensil(Utensils.PEN)
+        # Reset back to pen tool (done outside)
+        # self.setUtensil(Utensils.PEN)
 
     def undo(self):
         if len(self.activeLayers) > 1:
             self.inactiveLayers.append(self.activeLayers.pop())
+            self.layer_change.emit()
         self.update()
 
-    def redo(self):
+    def redo(self): # Now finishing command pattern
         if len(self.inactiveLayers) > 0:
             self.activeLayers.append(self.inactiveLayers.pop())
+            self.layer_change.emit()
         self.update()
 
     def loadImage(self, file_path):
@@ -355,9 +483,10 @@ class UINoteWindow(QWidget):
         self.ocr_menu = self.menu_bar.addMenu("OCR")
         self.ocr_menu.addAction(self.find_ocr)
 
+
+
         ########### Buttons ###########
         # Handled by resizeEvent
-        self.home_button = QPushButton('Toggle home', self)
         self.font = QtGui.QFont("Times New Roman", 20, QtGui.QFont.Bold)
         self.title = QtWidgets.QLineEdit()
         config = configparser.ConfigParser()
@@ -401,19 +530,19 @@ class UINoteWindow(QWidget):
         self.layout.setSpacing(0)
         self.layout.setAlignment(Qt.AlignTop)
         self.layout.addWidget(self.canvas_window, Qt.AlignTop)
-        self.button_layout = QGridLayout()
+        self.button_container = QtWidgets.QFrame()
+        #self.button_toolbar = QtWidgets.QToolBar(self.button_container)
+        self.button_layout = QGridLayout(self.button_container)
         self.button_layout.setContentsMargins(10,10,10,10)
 
-        self.home_button_display()
-        self.clear_button_display()
-        self.eraser_button_display()
-        self.pen_button_display()
-        self.undo_button_display()
-        self.redo_button_display()
-
-        self.layout.addLayout(self.button_layout, Qt.AlignBottom)
+        self.tool_buttons_ui()
+        self.button_layout_ui()
+        self.layout.addWidget(self.button_container, Qt.AlignBottom)
         self.setLayout(self.layout)
         self.layout.setMenuBar(self.menu_bar)
+
+        # Layer Management
+        self.canvas_window.label.layer_change.connect(self.change_layers)
 
         ########### Saving/Opening ###########
         if self.scheduled:
@@ -458,53 +587,135 @@ class UINoteWindow(QWidget):
 
     def erase(self):
         self.canvas_window.label.setUtensil(Utensils.ERASER)
-        self.eraser_button.setDisabled(True)
+        self.eraser_button.setEnabled(False)
+        self.highlighter_button.setEnabled(True)
         self.pen_button.setEnabled(True)
 
     def pen(self):
         self.canvas_window.label.setUtensil(Utensils.PEN)
-        self.pen_button.setDisabled(True)
+        self.pen_button.setEnabled(False)
+        self.highlighter_button.setEnabled(True)
         self.eraser_button.setEnabled(True)
 
-    def home_button_display(self):
-        self.button_layout.addWidget(self.home_button, 0, 3)
-        self.home_button.setToolTip("Clear any writing")
+    def highlight(self):
+        self.canvas_window.label.setUtensil(Utensils.HIGHLIGHTER)
+        self.highlighter_button.setEnabled(False)
+        self.pen_button.setEnabled(True)
+        self.eraser_button.setEnabled(True)
 
-    def clear_button_display(self):
-        self.clear_button = QtWidgets.QPushButton("Clear All", self)
-        self.button_layout.addWidget(self.clear_button, 0, 2)
-        self.clear_button.setToolTip("Clear any writing")
-        self.clear_button.clicked.connect(self.canvas_window.label.clear)
+    def button_layout_ui(self):
+        self.button_container.setStyleSheet("background-color: #e1e1e1; border-radius: 30px;")
+        self.button_container.setFixedHeight(60)
 
-    def eraser_button_display(self):
-        self.eraser_button = QtWidgets.QPushButton("Eraser", self)
-        self.button_layout.addWidget(self.eraser_button, 0, 1)
-        self.eraser_button.setToolTip("Erase any writing")
-        self.eraser_button.clicked.connect(self.erase)
+    # def home_button_display(self):
+    #     self.home_button = QPushButton('Toggle home', self)
+    #     self.button_layout.addWidget(self.home_button, 0, 5)
+    #     self.home_button.setToolTip("Clear any writing")
+    #
+    # def clear_button_display(self):
+    #     self.clear_button = QtWidgets.QPushButton("Clear All", self)
+    #     self.button_layout.addWidget(self.clear_button, 0, 3)
+    #     self.clear_button.setToolTip("Clear any writing")
+    #     self.clear_button.clicked.connect(self.canvas_window.label.clear)
+    #     self.clear_button.clicked.connect(self.pen)
+    #
+    # def eraser_button_display(self):
+    #     self.eraser_button = QtWidgets.QPushButton("Eraser", self)
+    #     self.eraser_button.setDisabled(False)
+    #     self.button_layout.addWidget(self.eraser_button, 0, 1)
+    #     self.eraser_button.setToolTip("Erase any writing")
+    #     self.eraser_button.clicked.connect(self.erase)
 
-    def pen_button_display(self):
-        self.pen_button = QtWidgets.QPushButton("Pen", self)
-        self.pen_button.setDisabled(False) # In use by default
-        self.pen_button.resize(100, 32)
+    def tool_buttons_ui(self):
+        self.pen_button = ToolButton(assets["pen"])
         self.button_layout.addWidget(self.pen_button, 0, 0)
-        self.pen_button.setToolTip("Premiere writing utensil")
         self.pen_button.clicked.connect(self.pen)
-
-    def undo_button_display(self):
-        self.undo_button = QtWidgets.QPushButton("Undo", self)
-        self.undo_button.setDisabled(False)  # In use by default
-        self.undo_button.resize(100, 32)
+        self.eraser_button = ToolButton(assets["eraser"])
+        self.button_layout.addWidget(self.eraser_button, 0, 1)
+        self.eraser_button.clicked.connect(self.erase)
+        self.highlighter_button = ToolButton(assets["highlighter"])
+        self.button_layout.addWidget(self.highlighter_button, 0, 2)
+        self.highlighter_button.clicked.connect(self.highlight)
+        self.color_button = ToolButton(assets["color_wheel"])
+        self.button_layout.addWidget(self.color_button, 0, 3)
+        self.color_button.clicked.connect(self.color_selector)
+        self.undo_button = ToolButton(assets["undo"])
+        self.undo_button.setDisabled(True)
         self.button_layout.addWidget(self.undo_button, 0, 4)
-        #self.undo_button.setToolTip("Premiere writing utensil")
         self.undo_button.clicked.connect(self.canvas_window.label.undo)
-
-    def redo_button_display(self):
-        self.redo_button = QtWidgets.QPushButton("Redo", self)
-        self.redo_button.setDisabled(False)  # In use by default
-        self.redo_button.resize(100, 32)
+        self.redo_button = ToolButton(assets["redo"])
+        self.redo_button.setDisabled(True)
         self.button_layout.addWidget(self.redo_button, 0, 5)
-        #self.redo_button.setToolTip("Premiere writing utensil")
         self.redo_button.clicked.connect(self.canvas_window.label.redo)
+        self.clear_button = ToolButton(assets["clear"])
+        self.clear_button.setDisabled(True)
+        self.button_layout.addWidget(self.clear_button, 0, 6)
+        self.clear_button.clicked.connect(self.canvas_window.label.clear)
+        self.clear_button.clicked.connect(self.pen)
+        self.home_button  = ToolButton(assets["home"])
+        self.button_layout.addWidget(self.home_button, 0, 7)
+        #self.button_toolbar.setIconSize(QSize(48, 58))
+        #self.button_toolbar.setStyleSheet("QToolBar {spacing: 17px;}")
+        self.pen()
+
+    def color_selector(self):
+        color_dialog = QtWidgets.QColorDialog()
+        color_dialog.setCurrentColor(QtGui.QColor(Qt.red))
+        color = color_dialog.getColor()
+        if self.canvas_window.label.current_utensil == Utensils.PEN:
+            Utensils.PEN.color = color
+        elif self.canvas_window.label.current_utensil == Utensils.HIGHLIGHTER:
+            Utensils.HIGHLIGHTER.color = QColor(color.getRgb()[0], color.getRgb()[1], color.getRgb()[2], 80)
+        #self.styleChoice.setStyleSheet("QWidget { background-color: %s}" % color.name())
+
+    def change_layers(self):
+        if len(self.canvas_window.label.activeLayers) > 1:
+            self.undo_button.setEnabled(True)
+            self.clear_button.setEnabled(True)
+        else:
+            self.undo_button.setDisabled(True)
+            self.clear_button.setDisabled(True)
+
+        if len(self.canvas_window.label.inactiveLayers) > 0:
+            self.redo_button.setEnabled(True)
+        else:
+            self.redo_button.setDisabled(True)
+
+
+    # def pen_button_display(self):
+    #     self.pen_button = ToolButton(assets["pen"])
+    #
+    #     # self.pen_button = QtWidgets.QPushButton("Pen", self)
+    #     # self.pen_button.setDisabled(True) # In use by default
+    #     # self.pen_button.resize(100, 32)
+    #     self.button_layout.addWidget(self.pen_button, 0, 0)
+    #     # self.pen_button.setToolTip("Premiere writing utensil")
+    #     # self.pen_button.setStyleSheet("background-image: url(assets/Pen.png);")
+    #     self.pen_button.clicked.connect(self.pen)
+    #
+    # def highlighter_button_display(self):
+    #     self.highlighter_button = QtWidgets.QPushButton("Highlighter", self)
+    #     self.highlighter_button.setDisabled(False)
+    #     self.highlighter_button.resize(100, 32)
+    #     self.button_layout.addWidget(self.highlighter_button, 0, 2)
+    #     self.highlighter_button.setToolTip("Highlight any writing")
+    #     self.highlighter_button.clicked.connect(self.highlight)
+    #
+    # def undo_button_display(self):
+    #     self.undo_button = QtWidgets.QPushButton("Undo", self)
+    #     self.undo_button.setDisabled(False)  # In use by default
+    #     self.undo_button.resize(100, 32)
+    #     self.button_layout.addWidget(self.undo_button, 0, 5)
+    #     #self.undo_button.setToolTip("Premiere writing utensil")
+    #     self.undo_button.clicked.connect(self.canvas_window.label.undo)
+    #
+    # def redo_button_display(self):
+    #     self.redo_button = QtWidgets.QPushButton("Redo", self)
+    #     self.redo_button.setDisabled(False)  # In use by default
+    #     self.redo_button.resize(100, 32)
+    #     self.button_layout.addWidget(self.redo_button, 0, 6)
+    #     #self.redo_button.setToolTip("Premiere writing utensil")
+    #     self.redo_button.clicked.connect(self.canvas_window.label.redo)
 
     ########### Saving ###########
     def save(self):
