@@ -689,11 +689,11 @@ class UINoteWindow(QWidget):
             self.savePopup()
         if not self.canvas_window.label.hasChanged():
             # image pre-processing
-            img = cv2.imread(self.file_path, cv2.IMREAD_GRAYSCALE)
-            img = cv2.resize(img, None, fx=0.3, fy=0.3)
-            thresh = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]
-            gauss = cv2.GaussianBlur(thresh, (3, 3), 0)
+            img = cv2.imread(self.file_path, cv2.IMREAD_GRAYSCALE)                      # grayscales image
+            thresh = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1] # threshing
+            gauss = cv2.GaussianBlur(thresh, (3, 3), 0)                                 # gaussian blurring
             custom_config = r'-l eng --oem 3 --psm 6 '
+
 
             ocr_findings = pytesseract.image_to_string(gauss, config=custom_config)
             #ocr_findings = pytesseract.image_to_string(Image.open(self.file_path))
