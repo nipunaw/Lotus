@@ -587,18 +587,21 @@ class UINoteWindow(QWidget):
 
     def erase(self):
         self.canvas_window.label.setUtensil(Utensils.ERASER)
+        self.color_indicator_update()
         self.eraser_button.setEnabled(False)
         self.highlighter_button.setEnabled(True)
         self.pen_button.setEnabled(True)
 
     def pen(self):
         self.canvas_window.label.setUtensil(Utensils.PEN)
+        self.color_indicator_update()
         self.pen_button.setEnabled(False)
         self.highlighter_button.setEnabled(True)
         self.eraser_button.setEnabled(True)
 
     def highlight(self):
         self.canvas_window.label.setUtensil(Utensils.HIGHLIGHTER)
+        self.color_indicator_update()
         self.highlighter_button.setEnabled(False)
         self.pen_button.setEnabled(True)
         self.eraser_button.setEnabled(True)
@@ -636,6 +639,9 @@ class UINoteWindow(QWidget):
         self.highlighter_button = ToolButton(assets["highlighter"])
         self.button_layout.addWidget(self.highlighter_button, 0, 2)
         self.highlighter_button.clicked.connect(self.highlight)
+        self.color_indicator = ToolButton(assets["color_indicator"], 35, 35)
+        self.button_layout.addWidget(self.color_indicator, 0, 3)
+        self.color_indicator_update()
         self.color_button = ToolButton(assets["color_wheel"])
         self.button_layout.addWidget(self.color_button, 0, 3)
         self.color_button.clicked.connect(self.color_selector)
@@ -660,13 +666,22 @@ class UINoteWindow(QWidget):
 
     def color_selector(self):
         color_dialog = QtWidgets.QColorDialog()
-        color_dialog.setCurrentColor(QtGui.QColor(Qt.red))
-        color = color_dialog.getColor()
-        if self.canvas_window.label.current_utensil == Utensils.PEN:
-            Utensils.PEN.color = color
-        elif self.canvas_window.label.current_utensil == Utensils.HIGHLIGHTER:
-            Utensils.HIGHLIGHTER.color = QColor(color.getRgb()[0], color.getRgb()[1], color.getRgb()[2], 80)
+        color = color_dialog.getColor(self.canvas_window.label.current_utensil.color)
+
+        if color.isValid():
+            if self.canvas_window.label.current_utensil == Utensils.PEN:
+                Utensils.PEN.color = color
+            elif self.canvas_window.label.current_utensil == Utensils.HIGHLIGHTER:
+                Utensils.HIGHLIGHTER.color = QColor(color.getRgb()[0], color.getRgb()[1], color.getRgb()[2], 80)
+            self.color_indicator_update()
         #self.styleChoice.setStyleSheet("QWidget { background-color: %s}" % color.name())
+
+    def color_indicator_update(self):
+        r = QColor(self.canvas_window.label.current_utensil.color).getRgb()[0]
+        g = QColor(self.canvas_window.label.current_utensil.color).getRgb()[1]
+        b = QColor(self.canvas_window.label.current_utensil.color).getRgb()[2]
+        a = QColor(self.canvas_window.label.current_utensil.color).getRgb()[3]
+        self.color_indicator.setStyleSheet("background-color: rgba(" + str(r) + "," + str(g) + "," + str(b) + "," + str(a) + "); margin-top: 10px; margin-left: 10px;")
 
     def change_layers(self):
         if len(self.canvas_window.label.activeLayers) > 1:
