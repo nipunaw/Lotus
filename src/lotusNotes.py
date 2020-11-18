@@ -24,12 +24,27 @@ from src.constants import CONFIG_FILE, DIRECTORY_FILE, SCHEDULE_FILE_PATH, asset
 from src.lotusButtons import ToolButton
 
 
+def default_config():
+    try:
+        file = open(CONFIG_FILE, 'r')
+    except IOError:
+        file = open(CONFIG_FILE, 'w')
+        config = configparser.ConfigParser()
+        config['DEFAULT'] = {'Name': '',
+                             'Pen_Size': '4',
+                             'Eraser_Size': '4',
+                             'Name_Heading': 'True'}
+        config.write(file)
+    file.close()
+
 def pen_size():
+    default_config()
     config = configparser.ConfigParser()
     config.read(CONFIG_FILE)
     return int(config['DEFAULT']['pen_size'])
 
 def eraser_size():
+    default_config()
     config = configparser.ConfigParser()
     config.read(CONFIG_FILE)
     return int(config['DEFAULT']['eraser_size'])

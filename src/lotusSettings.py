@@ -23,14 +23,10 @@ class UISettingsWindow(QWidget):
         self.setMinimumWidth(320)
         self.field_ui()
 
-
-
-
     def field_ui(self):
         self.layout = QtWidgets.QGridLayout()
         config = configparser.ConfigParser()
         config.read(CONFIG_FILE)
-
 
         self.name_field = QtWidgets.QLabel()
         self.name_field.setText("Name: ")

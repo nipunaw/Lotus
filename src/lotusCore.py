@@ -30,6 +30,16 @@ QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True) #use h
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
+        self.default_config()
+        self.first_time = True
+        self.newNoteCount = 0
+        self.newNotes = []
+        self.initUI()
+        self.HubWindowSeparate()
+
+        ###### Attempting to center (experimental) ######
+
+    def default_config(self):
         try:
             file = open(CONFIG_FILE, 'r')
         except IOError:
@@ -42,13 +52,6 @@ class MainWindow(QMainWindow):
             config.write(file)
         file.close()
 
-        self.first_time = True
-        self.newNoteCount = 0
-        self.newNotes = []
-        self.initUI()
-        self.HubWindowSeparate()
-
-        ###### Attempting to center (experimental) ######
     def initUI(self):
         screen = QtGui.QGuiApplication.screenAt(QtGui.QCursor().pos())
         fg = self.frameGeometry()
