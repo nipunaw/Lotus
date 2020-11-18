@@ -9,11 +9,11 @@
 ########### PyQT5 imports ###########
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QPixmap, QIcon, QImage
+from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QPushButton, QWidget
-from PyQt5.uic.properties import QtCore
 
 from src.constants import DIRECTORY_FILE
+
 
 class UIPreviousWindow(QWidget):
     def __init__(self, set_paths, parent=None):

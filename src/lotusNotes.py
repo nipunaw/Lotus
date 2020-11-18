@@ -290,10 +290,10 @@ class CanvasWindow(QScrollArea):
 class UINoteWindow(QWidget):
     deleted_file = pyqtSignal(str)
 
-    def __init__(self, directory : str, parent=None, scheduled=False):
+    def __init__(self, file_path:str, parent=None, scheduled=False):
         super(UINoteWindow, self).__init__(parent)
 
-        self.directory = directory
+        self.file_path = file_path
         self.scheduled = scheduled
 
         ########### Menu Bar ###########
@@ -357,7 +357,6 @@ class UINoteWindow(QWidget):
         self.canvas_window.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.layout = QVBoxLayout()
 
-
         self.heading_title = QtWidgets.QLineEdit()
         title_font = QtGui.QFont("Times New Roman", 20)
         self.heading_title.setFont(title_font)
@@ -401,15 +400,12 @@ class UINoteWindow(QWidget):
 
         ########### Saving/Opening ###########
         if self.scheduled:
-            self.file_path = self.directory
             self.open_directory(self.file_path)
-        elif self.directory is not None:
-            self.file_path = self.directory[:-1]
+        elif self.file_path is not None:
+            self.file_path = self.file_path[:-1]
             self.open_directory(self.file_path)
         else:
             self.file_path = ""
-
-        self.file_path_2 = ""
 
     ########### Closing ###########
     def closeEvent(self, event):
@@ -499,15 +495,15 @@ class UINoteWindow(QWidget):
         self.update_open_recent_menu()
 
     def save_as(self):
-        self.file_path_2, _ = QtWidgets.QFileDialog.getSaveFileName(self,
+        file_path, _ = QtWidgets.QFileDialog.getSaveFileName(self,
                                                                     "Save Notes", # Caption
                                                                     "notes.jpg", # File-name, directory
                                                                     "JPG (*.jpg);;PNG (*.png)") # File types
 
         # Blank file path
-        if self.file_path_2 == "":
+        if file_path == "":
             return
-        self.file_path =  self.file_path_2
+        self.file_path =  file_path
         try:
             #file exists
             with open(DIRECTORY_FILE, "r") as f:
@@ -639,10 +635,10 @@ class UINoteWindow(QWidget):
         if self.canvas_window.label.hasChanged():
             self.savePopup()
         if not file_path:
-            self.file_path_2, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home", "JPG (*.jpg);;PNG (*.png)")
-            if self.file_path_2 == "":
+            file_path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home", "JPG (*.jpg);;PNG (*.png)")
+            if file_path == "":
                 return
-            self.file_path = self.file_path_2
+            self.file_path = file_path
         else:
             self.file_path = file_path
         self.open_directory(self.file_path)
