@@ -13,12 +13,14 @@ import os
 from datetime import date
 from enum import Enum
 import pytesseract
+import cv2
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt, pyqtSignal, QSize, QPoint, QRect
 from PyQt5.QtGui import QRegion, QColor, QPainter, QIcon, QPixmap
 from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QMessageBox, QScrollArea, QGridLayout, QHBoxLayout, \
     QVBoxLayout, QSizePolicy, QAction
+from spellchecker import SpellChecker
 
 from src.constants import CONFIG_FILE, DIRECTORY_FILE, SCHEDULE_FILE_PATH
 
@@ -687,7 +689,16 @@ class UINoteWindow(QWidget):
         if self.canvas_window.label.hasChanged() or self.file_path == "":
             self.savePopup()
         if not self.canvas_window.label.hasChanged():
-            ocr_findings = pytesseract.image_to_string(Image.open(self.file_path))
+            # image pre-processing
+            img = cv2.imread(self.file_path, cv2.IMREAD_GRAYSCALE)                      # grayscales image
+            thresh = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1] # threshing
+            gauss = cv2.GaussianBlur(thresh, (3, 3), 0)                                 # gaussian blurring
+            custom_config = r'-l eng --oem 3 --psm 6 '
+
+
+            ocr_findings = pytesseract.image_to_string(gauss, config=custom_config)
+            #ocr_findings = pytesseract.image_to_string(Image.open(self.file_path))
+
             ocr_prompt = QtWidgets.QDialog(self)
             ocr_prompt.setWindowTitle("Typed Characters found (OCR)")
             options = QtWidgets.QDialogButtonBox.Close
@@ -695,6 +706,16 @@ class UINoteWindow(QWidget):
             ocr_prompt.buttonBox.rejected.connect(ocr_prompt.reject)
             ocr_prompt.layout = QtWidgets.QVBoxLayout()
             label = QLabel(ocr_prompt)
+
+            #Clean up findings by running it through a spell checker
+            spell = SpellChecker()
+            ocr_findings = ocr_findings.split()
+            misspelled = spell.unknown(ocr_findings)
+            separator = " "
+            ocr_findings = separator.join(ocr_findings)
+            for word in misspelled:
+                ocr_findings = ocr_findings.replace(word,spell.correction(word))
+
             label.setText("Found: \n" + ocr_findings)
             ocr_prompt.layout.addWidget(label)
             ocr_prompt.layout.addWidget(ocr_prompt.buttonBox)
