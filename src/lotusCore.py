@@ -15,10 +15,11 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt
 ########### File imports ###########
 import configparser
-from src.lotusHub import UIHubWindow
-from src.lotusNotes import UINoteWindow
+from src.lotusHub import UIHubWindow  # , set_name
+from src.lotusNotes import UINoteWindow, set_default_eraser_width, set_default_pen_width
 from src.lotusPrevious import UIPreviousWindow
 from src.lotusCalender import UICalendarWindow
+from src.lotusSettings import UISettingsWindow
 from src.constants import CONFIG_FILE, SCHEDULED_NOTES_DIRECTORY
 ########### Other imports ###########
 import os
@@ -29,14 +30,7 @@ QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True) #use h
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
-        try:
-            file = open(CONFIG_FILE, 'r')
-        except IOError:
-            file = open(CONFIG_FILE, 'w')
-            config = configparser.ConfigParser()
-            config['DEFAULT'] = {'Name': ''}
-            config.write(file)
-        file.close()
+        self.default_config()
         self.first_time = True
         self.newNoteCount = 0
         self.newNotes = []
@@ -44,6 +38,21 @@ class MainWindow(QMainWindow):
         self.HubWindowSeparate()
 
         ###### Attempting to center (experimental) ######
+
+    def default_config(self):
+        os.makedirs(SCHEDULED_NOTES_DIRECTORY, exist_ok=True)
+        try:
+            file = open(CONFIG_FILE, 'r')
+        except IOError:
+            file = open(CONFIG_FILE, 'w')
+            config = configparser.ConfigParser()
+            config['DEFAULT'] = {'Name': '',
+                                 'Pen_Size': '4',
+                                 'Eraser_Size': '4',
+                                 'Name_Heading': 'True'}
+            config.write(file)
+        file.close()
+
     def initUI(self):
         screen = QtGui.QGuiApplication.screenAt(QtGui.QCursor().pos())
         fg = self.frameGeometry()
@@ -66,7 +75,7 @@ class MainWindow(QMainWindow):
             self.HubWindow.new_note_button.clicked.connect(lambda: self.NoteWindowSeparate(None))
             self.HubWindow.schedule_button.clicked.connect(self.startCalenderWindow)
             self.HubWindow.previous_notes_button.clicked.connect(self.startPreviousWindow)
-
+            self.HubWindow.settings_button.clicked.connect(self.startSettingsWindow)
             self.HubWindow.show()
 
         elif self.HubWindow.isHidden():
@@ -153,6 +162,24 @@ class MainWindow(QMainWindow):
         ########### Button handling ###########
         for i in range(len(self.PreviousWindow.directories)):
             self.PreviousWindow.buttons[self.PreviousWindow.directories[i]].clicked.connect(lambda state, x=self.PreviousWindow.directories[i]: self.NoteWindowSeparate(x))
+
+        self.show()
+
+    def update_header(self, name):
+        self.HubWindow.user_welcome.setText("Welcome back "+ name)
+
+    def startSettingsWindow(self):
+        self.SettingsWindow = UISettingsWindow()
+        self.SettingsWindow.pen_width_updated.connect(set_default_pen_width)
+        self.SettingsWindow.eraser_width_updated.connect(set_default_eraser_width)
+        self.SettingsWindow.name_updated.connect(self.update_header) # lambda state, x = self.updateSettingsWindow() : self.HubWindow.user_welcome.setText(x)
+        self.setWindowTitle("Settings")
+        self.setCentralWidget(self.SettingsWindow)
+
+        ########### Background color ###########
+        p = self.SettingsWindow.palette()
+        p.setColor(self.SettingsWindow.backgroundRole(), Qt.white)
+        self.setPalette(p)
 
         self.show()
 
