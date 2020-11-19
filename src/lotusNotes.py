@@ -20,11 +20,12 @@ from PyQt5.QtGui import QRegion, QColor, QPainter, QIcon, QPixmap
 from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QMessageBox, QScrollArea, QGridLayout, QHBoxLayout, \
     QVBoxLayout, QSizePolicy, QAction
 
-from src.constants import CONFIG_FILE, DIRECTORY_FILE, SCHEDULE_FILE_PATH, assets
+from src.constants import CONFIG_FILE, DIRECTORY_FILE, SCHEDULE_FILE_PATH, SCHEDULED_NOTES_DIRECTORY, assets
 from src.lotusButtons import ToolButton
 
 
 def default_config():
+    os.makedirs(SCHEDULED_NOTES_DIRECTORY, exist_ok=True)
     try:
         file = open(CONFIG_FILE, 'r')
     except IOError:

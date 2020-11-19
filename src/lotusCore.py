@@ -40,6 +40,7 @@ class MainWindow(QMainWindow):
         ###### Attempting to center (experimental) ######
 
     def default_config(self):
+        os.makedirs(SCHEDULED_NOTES_DIRECTORY, exist_ok=True)
         try:
             file = open(CONFIG_FILE, 'r')
         except IOError:
