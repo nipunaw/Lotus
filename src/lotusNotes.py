@@ -495,7 +495,7 @@ class UINoteWindow(QWidget):
         self.file_menu.addAction(self.save_as_option)
 
         # OCR
-        self.find_ocr = QtWidgets.QAction("Find Typed/Neat Text", self)
+        self.find_ocr = QtWidgets.QAction("Send Neatly Written Notes to .txt File (Beta)", self)
         self.find_ocr.triggered.connect(self.ocr)
         self.ocr_menu = self.menu_bar.addMenu("OCR")
         self.ocr_menu.addAction(self.find_ocr)
@@ -957,22 +957,21 @@ class UINoteWindow(QWidget):
             # print ocr results to text file
             # text file name will be the image_file_name.txt
             self.text_file_path = os.path.splitext(self.file_path)[0] + '.txt'
-            print(self.text_file_path)
             with open(self.text_file_path, 'w') as text_file:
                 text_file.write(ocr_findings)
 
             # ocr results into pop-up widget
-            # ocr_prompt = QtWidgets.QDialog(self)
-            # ocr_prompt.setWindowTitle("Typed Characters found (OCR)")
-            # options = QtWidgets.QDialogButtonBox.Close
-            # ocr_prompt.buttonBox = QtWidgets.QDialogButtonBox(options)
-            # ocr_prompt.buttonBox.rejected.connect(ocr_prompt.reject)
-            # ocr_prompt.layout = QtWidgets.QVBoxLayout()
-            # label = QLabel(ocr_prompt)
-            # label.setText("Found: \n" + ocr_findings)
-            # ocr_prompt.layout.addWidget(label)
-            # ocr_prompt.layout.addWidget(ocr_prompt.buttonBox)
-            # ocr_prompt.setLayout(ocr_prompt.layout)
-            # ocr_prompt.exec_()
+            ocr_prompt = QtWidgets.QDialog(self)
+            ocr_prompt.setWindowTitle("Typed Characters found (OCR)")
+            options = QtWidgets.QDialogButtonBox.Close
+            ocr_prompt.buttonBox = QtWidgets.QDialogButtonBox(options)
+            ocr_prompt.buttonBox.rejected.connect(ocr_prompt.reject)
+            ocr_prompt.layout = QtWidgets.QVBoxLayout()
+            label = QLabel(ocr_prompt)
+            label.setText("Found: \n" + ocr_findings)
+            ocr_prompt.layout.addWidget(label)
+            ocr_prompt.layout.addWidget(ocr_prompt.buttonBox)
+            ocr_prompt.setLayout(ocr_prompt.layout)
+            ocr_prompt.exec_()
         else:
             return
