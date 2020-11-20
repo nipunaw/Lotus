@@ -947,6 +947,9 @@ class UINoteWindow(QWidget):
         if not self.canvas_window.label.hasChanged():
             # image pre-processing
             img = cv2.imread(self.file_path, cv2.IMREAD_GRAYSCALE)  # grayscales image
+            #kernel = np.ones((1, 1), np.uint8)                     # only improves accuracy when no highlighting present
+            #img = cv2.dilate(img, kernel, iterations=1)            # otherwise decreases accuracy
+            #img = cv2.erode(img, kernel, iterations=1)
             thresh = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]  # threshing
             gauss = cv2.GaussianBlur(thresh, (3, 3), 0)  # gaussian blurring
             custom_config = r'-l eng --oem 3 --psm 6 '
