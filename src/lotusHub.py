@@ -89,6 +89,7 @@ class UIHubWindow(QWidget):
         self.schedule_button = CircleButton(assets["schedule"], assets["scheduleDarker"])
         self.previous_notes_button = CircleButton(assets["previousNotes"], assets["previousNotesDarker"])
         self.settings_button = CircleButton(assets["settings"], assets["settings"], 20, 20)
+        self.help_button = CircleButton(assets["help"], assets["help"], 20, 20)
 
     def menu_ui(self):
         self.menu_background = QtWidgets.QLabel(self)
@@ -239,6 +240,7 @@ class UIHubWindow(QWidget):
             self.layout.addWidget(self.user_welcome, 0, 1)
             self.layout.addWidget(self.logo_black, 0, 0)
             self.layout.addWidget(self.settings_button, 0, 3, Qt.AlignRight)
+            self.layout.addWidget(self.help_button, 0, 2, Qt.AlignRight)
             self.layout.addWidget(self.schedule_background, 1, 0, 6, 3) # Qt.AlignLeft
             self.layout.addWidget(self.time, 1, 1)
             self.layout.addWidget(self.date, 1, 1)

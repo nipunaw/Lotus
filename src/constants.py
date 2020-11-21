@@ -26,5 +26,8 @@ assets = {
     "clear" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/clear.png'),
     "home" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/home.png'),
     "color_wheel" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/color_wheel.png'),
-    "color_indicator" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/color_indicator.png')
+    "color_indicator" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/color_indicator.png'),
+    "help": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help.png'),
+    "help_lotus_home": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_lotus_home.jpg')
+
 }

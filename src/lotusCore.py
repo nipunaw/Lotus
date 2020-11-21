@@ -20,6 +20,7 @@ from src.lotusNotes import UINoteWindow, set_default_eraser_width, set_default_p
 from src.lotusPrevious import UIPreviousWindow
 from src.lotusCalender import UICalendarWindow
 from src.lotusSettings import UISettingsWindow
+from src.lotusHelp import UIHelpWindow
 from src.constants import CONFIG_FILE, SCHEDULED_NOTES_DIRECTORY
 ########### Other imports ###########
 import os
@@ -76,6 +77,7 @@ class MainWindow(QMainWindow):
             self.HubWindow.schedule_button.clicked.connect(self.startCalenderWindow)
             self.HubWindow.previous_notes_button.clicked.connect(self.startPreviousWindow)
             self.HubWindow.settings_button.clicked.connect(self.startSettingsWindow)
+            self.HubWindow.help_button.clicked.connect(self.startHelpWindow)
             self.HubWindow.show()
 
         elif self.HubWindow.isHidden():
@@ -179,6 +181,19 @@ class MainWindow(QMainWindow):
         ########### Background color ###########
         p = self.SettingsWindow.palette()
         p.setColor(self.SettingsWindow.backgroundRole(), Qt.white)
+        self.setPalette(p)
+
+        self.show()
+
+    def startHelpWindow(self):
+        self.HelpWindow = UIHelpWindow()
+        self.setWindowTitle("Help")
+        self.setCentralWidget(self.HelpWindow)
+        self.HelpWindow.setFixedSize(800, 500)
+
+        ########### Background color ###########
+        p = self.HelpWindow.palette()
+        p.setColor(self.HelpWindow.backgroundRole(), Qt.white)
         self.setPalette(p)
 
         self.show()
