@@ -343,15 +343,27 @@ class Canvas(QLabel):
         self.scrolled.emit(event)
 
     def paintEvent(self, event):
-        self.activeLayers[0].fill(Qt.white)
+        #self.activeLayers[0].fill(Qt.white)
         self.layer_painter.begin(self.activeLayers[0])
         self.layer_painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
         self.layer_painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
-        for i in range(1, len(self.activeLayers)):
-            self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[i])
+        self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[len(self.activeLayers)-1])
+        #for i in range(1, len(self.activeLayers)):
+        #    self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[i])
         self.layer_painter.end()
         self.setPixmap(self.activeLayers[0])
         super(Canvas, self).paintEvent(event)
+
+    # def paintEvent(self, event):
+    #     self.activeLayers[0].fill(Qt.white)
+    #     self.layer_painter.begin(self.activeLayers[0])
+    #     self.layer_painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    #     self.layer_painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
+    #     for i in range(1, len(self.activeLayers)):
+    #         self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[i])
+    #     self.layer_painter.end()
+    #     self.setPixmap(self.activeLayers[0])
+    #     super(Canvas, self).paintEvent(event)
 
     def hasChanged(self):
         if self.last_save is None:
@@ -376,17 +388,30 @@ class Canvas(QLabel):
         # Reset back to pen tool (done outside)
         # self.setUtensil(Utensils.PEN)
 
+    def change_master_layer(self):
+        self.activeLayers[0].fill(Qt.white)
+        self.layer_painter.begin(self.activeLayers[0])
+        self.layer_painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+        self.layer_painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
+        for i in range(1, len(self.activeLayers)):
+            self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[i])
+        self.layer_painter.end()
+        self.setPixmap(self.activeLayers[0])
+
+
     def undo(self):
         if len(self.activeLayers) > 1:
             self.inactiveLayers.append(self.activeLayers.pop())
+            self.change_master_layer()
             self.layer_change.emit()
-        self.update()
+        #self.update()
 
     def redo(self): # Now finishing command pattern
         if len(self.inactiveLayers) > 0:
             self.activeLayers.append(self.inactiveLayers.pop())
+            self.change_master_layer()
             self.layer_change.emit()
-        self.update()
+        #self.update()
 
     def loadImage(self, file_path):
         image_pixmap = QtGui.QPixmap(file_path)
