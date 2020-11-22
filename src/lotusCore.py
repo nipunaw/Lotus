@@ -7,10 +7,12 @@
 # Spencer Bass
 
 ########### WSL import ###########
+from PyQt5.QtGui import QTextCursor
+
 import src.wsl
 ########### PyQT5 imports ###########
 import sys
-from PyQt5.QtWidgets import QApplication , QMainWindow , QPushButton , QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QTextEdit
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt
 ########### File imports ###########
@@ -21,7 +23,7 @@ from src.lotusPrevious import UIPreviousWindow
 from src.lotusCalender import UICalendarWindow
 from src.lotusSettings import UISettingsWindow
 from src.lotusHelp import UIHelpWindow
-from src.constants import CONFIG_FILE, SCHEDULED_NOTES_DIRECTORY
+from src.constants import CONFIG_FILE, SCHEDULED_NOTES_DIRECTORY, assets
 ########### Other imports ###########
 import os
 
@@ -196,7 +198,8 @@ class MainWindow(QMainWindow):
         p.setColor(self.HelpWindow.backgroundRole(), Qt.white)
         self.setPalette(p)
 
-        self.show()
+        #self.show()
+
 
     def connectCalendarWindowButtons(self, buttons : list):
         for (button, cls, date) in buttons:
