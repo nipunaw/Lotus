@@ -1,11 +1,11 @@
 import json
 
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import Qt, QTime, QDate, pyqtSignal, QRect, QRectF, QObject
+from PyQt5.QtCore import Qt, QTime, QDate, pyqtSignal, QRect, QRectF, QObject, pyqtProperty, QDateTime
 from PyQt5.QtGui import QColor, QPen
 from PyQt5.QtWidgets import QPushButton, QWidget, QDialogButtonBox, QVBoxLayout, QHBoxLayout, \
     QDialog, QFormLayout, QSpinBox, QDateTimeEdit, QLineEdit, QTimeEdit, QRadioButton, QMessageBox, QLabel, \
-    QCalendarWidget, QStackedWidget, QColorDialog, QSizePolicy, QSpacerItem, QGridLayout
+    QCalendarWidget, QStackedWidget, QColorDialog, QSizePolicy, QSpacerItem, QGridLayout, QCheckBox, QMenu, QAction
 
 from src.constants import SCHEDULE_FILE_PATH
 from src.lotusUtils import clear_layout
@@ -228,17 +228,21 @@ class ScheduleCalendar(QCalendarWidget):
 class DayPicker(QWidget):
     def __init__(self):
         super(DayPicker, self).__init__()
+
         self.layout = QHBoxLayout()
-        weekends = False
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self.layout)
+
+        weekends = True
         days = DAYS[0:len(DAYS) if weekends else 5]
         self.buttons = []
         for day in days:
             if day is not None:
                 radio = QRadioButton()
+                radio.sizePolicy().setRetainSizeWhenHidden(False)
                 radio.setText(day)
                 self.buttons.append(radio)
                 self.layout.addWidget(radio)
-        self.setLayout(self.layout)
 
     def get_day(self):
         for button in self.buttons:
@@ -246,14 +250,19 @@ class DayPicker(QWidget):
                 return button.text()
 
 class ClassTimePicker(QWidget):
-    def __init__(self):
-        super(ClassTimePicker, self).__init__()
-        self.layout = QHBoxLayout()
+    def __init__(self, parent=None):
+        super(ClassTimePicker, self).__init__(parent=parent)
         self.time_selector = QTimeEdit()
+        self.time_selector.sizePolicy().setRetainSizeWhenHidden(False)
         self.time_selector.setDisplayFormat("hh:mm AP")
         self.time_selector.setTime(QTime(12, 0, 0))
-        self.layout.addWidget(self.time_selector)
+
         self.day_picker = DayPicker()
+        self.day_picker.sizePolicy().setRetainSizeWhenHidden(False)
+
+        self.layout = QHBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.addWidget(self.time_selector)
         self.layout.addWidget(self.day_picker)
         self.setLayout(self.layout)
 
@@ -271,6 +280,41 @@ class ClassTimePicker(QWidget):
     def is_valid(self):
         return self.day_picker.get_day() is not None
 
+class DateTimePickerSeriesModel(QObject):
+    def __init__(self, parent=None):
+        super(DateTimePickerSeriesModel, self).__init__(parent)
+        self._content = QDateTime.currentDateTime()
+
+    contentChanged = pyqtSignal(QDateTime)
+
+    @property
+    def content(self):
+        return self._content
+
+    @content.setter
+    def content(self, date_time:QDateTime):
+        self._content = date_time
+        self.contentChanged.emit(self._content)
+
+class DateTimePickerSeries(QWidget):
+    def __init__(self, model, display:str):
+        super(DateTimePickerSeries, self).__init__()
+        self.model = model
+
+        date_time = QDateTimeEdit(self.model.content)
+        date_time.setDisplayFormat(display)
+        date_time.dateTimeChanged.connect(self.set_model_date_time)
+
+        self.model.contentChanged.connect(date_time.setDateTime)
+
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(date_time)
+        self.setLayout(layout)
+
+    def set_model_date_time(self, date_time:QDateTime):
+        self.model.content = date_time
+
 class Popup(QDialog):
     def __init__(self, schedule:Schedule, parent=None, data=None):
         super(Popup, self).__init__(parent)
@@ -279,50 +323,117 @@ class Popup(QDialog):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.setWindowTitle("Add New Scheduled Notes" if data is None else "Edit {} Details".format(self.class_name))
 
-        self.layout = QFormLayout()
+        self.layout = QVBoxLayout()
+        self.layout.setSpacing(0)
+        self.form_layout = QFormLayout()
+        self.form_layout.setContentsMargins(0, 0, 0, self.form_layout.verticalSpacing())
+        self.form_layout_widget = QWidget()
+        self.form_layout_widget.setLayout(self.form_layout)
 
         #The amount of fields in the form that come before the block section (name, #blocks, start, end date, color)
-        self.rows_before_blocks = 5
+        self.rows_before_blocks = 3
+
+        self.event_type = QPushButton()
+        event_type_menu = QMenu()
+        event_type_menu.addAction("Class")
+        event_type_menu.addSection("Event")
+        event_type_menu.addAction("One Time Event")
+        event_type_menu.addAction("Recurring Event")
+        event_type_menu.addAction("One Time Class Event")
+        for action in event_type_menu.actions():
+            if not action.isSeparator():
+                action.triggered.connect(lambda state, x=action.text(): self.set_type(x))
+        self.event_type.setMenu(event_type_menu)
+        self.form_layout.addRow("Type:", self.event_type)
 
         #Class Title
         self.name_edit = QLineEdit()
-        self.layout.addRow("Class Name:", self.name_edit)
-
-        #Class start and end dates
-        self.start_date = QDateTimeEdit(QDate.currentDate())
-        self.start_date.setDisplayFormat("MMM d yyyy")
-        self.layout.addRow("Start Date:", self.start_date)
-        self.end_date = QDateTimeEdit(QDate.currentDate())
-        self.end_date.setDisplayFormat("MMM d yyyy")
-        self.layout.addRow("End Date:" , self.end_date)
-
+        self.form_layout.addRow("Name:", self.name_edit)
         #Color
         self.color_picker = QColorDialog()
         self.color_button = QPushButton("Pick Color")
         self.color_button.clicked.connect(self.color_picker.open)
         self.color_picker.currentColorChanged.connect(self.update_color)
-        self.layout.addRow("Color Code:", self.color_button)
+        self.form_layout.addRow("Color Code:", self.color_button)
 
-        #Blocks
+        # Initialize widgets to be added later
+        start_date_model = DateTimePickerSeriesModel(self)
+        self.class_start_date = DateTimePickerSeries(start_date_model, "MMM d yyyy")
+        self.event_start_date = DateTimePickerSeries(start_date_model, "MMM d yyyy")
+
+        end_date_model = DateTimePickerSeriesModel(self)
+        self.class_end_date = DateTimePickerSeries(end_date_model, "MMM d yyyy")
+        self.event_end_date = DateTimePickerSeries(end_date_model, "MMM d yyyy")
+
+        event_date_model = DateTimePickerSeriesModel(self)
+        self.class_event_date = DateTimePickerSeries(event_date_model, "MMM d yyyy")
+        self.event_date = DateTimePickerSeries(event_date_model, "MMM d yyyy")
+
+        # Blocks
         self.blocks = 1
-        spin_box = QSpinBox()
-        spin_box.setValue(1)
-        spin_box.setMinimum(1)
-        spin_box.setMaximum(7)
-        spin_box.valueChanged.connect(self.update_blocks)
-        self.layout.addRow("Weekly Blocks:", spin_box)
-        #Class DateTime
-        self.layout.addRow("Block Time:", ClassTimePicker())
+        self.spin_box = QSpinBox()
+        self.spin_box.setValue(1)
+        self.spin_box.setMinimum(1)
+        self.spin_box.setMaximum(7)
+        self.spin_box.valueChanged.connect(self.update_blocks)
 
-        #Buttons
-        self.buttonBox = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
+        self.class_picker = QPushButton()
+        class_picker_menu = QMenu()
+        for class_name in self.schedule.schedule.keys():
+            class_action = QAction(class_name, parent=class_picker_menu)
+            class_action.triggered.connect(lambda state, x=class_action.text(): self.class_picker.setText(x))
+            class_picker_menu.addAction(class_action)
+        class_picker_menu.aboutToShow.connect(
+            lambda: class_picker_menu.setMinimumWidth(self.class_picker.width()))
+        self.class_picker.setMenu(class_picker_menu)
 
-        self.buttonBox.setOrientation(Qt.Horizontal)
+        self.stack = QStackedWidget()
+        self.stack.setContentsMargins(0, 0, 0, 0)
 
-        self.layout.addWidget(self.buttonBox)
+        class_layout = QFormLayout()
+        class_layout.setContentsMargins(0, 0, 0, 0)
+        class_layout.addRow("Start Date:", self.class_start_date)
+        class_layout.addRow("End Date:", self.class_end_date)
+        class_layout.addRow("Weekly Blocks:", self.spin_box)
+        class_layout.addRow("Block Time:", ClassTimePicker())
+        self.class_options = QWidget()
+        self.class_options.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self.class_options.setLayout(class_layout)
+
+        recurring_event_layout = QFormLayout()
+        recurring_event_layout.setContentsMargins(0, 0, 0, 0)
+        recurring_event_layout.addRow("Start Date:", self.event_start_date)
+        recurring_event_layout.addRow("End Date:", self.event_end_date)
+        self.recurring_event_options = QWidget()
+        self.recurring_event_options.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self.recurring_event_options.setLayout(recurring_event_layout)
+
+        one_time_event_layout = QFormLayout()
+        one_time_event_layout.setContentsMargins(0, 0, 0, 0)
+        one_time_event_layout.addRow("Event Date:", self.event_date)
+        self.one_time_event_options = QWidget()
+        self.one_time_event_options.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self.one_time_event_options.setLayout(one_time_event_layout)
+
+        class_event_layout = QFormLayout()
+        class_event_layout.setContentsMargins(0, 0, 0, 0)
+        class_event_layout.addRow("Class:", self.class_picker)
+        class_event_layout.addRow("Event Date:", self.class_event_date)
+        self.class_event_options = QWidget()
+        self.class_event_options.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self.class_event_options.setLayout(class_event_layout)
+
+        self.stack.addWidget(self.class_event_options)
+        self.stack.addWidget(self.one_time_event_options)
+        self.stack.addWidget(self.recurring_event_options)
+        self.stack.addWidget(self.class_options)
+
+        self.set_type("Class")
+
+        self.layout.addWidget(self.form_layout_widget)
+        self.layout.addWidget(self.stack)
         self.setLayout(self.layout)
+        self.show_buttons()
 
         #Update Values if self.data is defined
         if self.data is not None:
@@ -330,12 +441,60 @@ class Popup(QDialog):
             self.start_date.setDate(QDate(self.data["start"]["year"], self.data["start"]["month"], self.data["start"]["day"]))
             self.end_date.setDate(QDate(self.data["end"]["year"], self.data["end"]["month"], self.data["end"]["day"]))
             self.color_picker.setCurrentColor(QColor(self.data["color"]["r"], self.data["color"]["g"], self.data["color"]["b"]))
-            spin_box.setValue(len(self.data["blocks"]))
+            self.spin_box.setValue(len(self.data["blocks"]))
             for i in range(0, len(self.data["blocks"])):
                 w : ClassTimePicker = self.layout.itemAt(self.rows_before_blocks + i, QFormLayout.FieldRole).widget()
                 block = self.data["blocks"][i]
                 w.set_day(block["day"])
                 w.set_time(block["time"])
+
+    def show_buttons(self):
+        buttonBox = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel, parent=self)
+        buttonBox.accepted.connect(self.accept)
+        buttonBox.rejected.connect(self.reject)
+        buttonBox.setOrientation(Qt.Horizontal)
+        self.layout.addWidget(buttonBox)
+
+    def set_type(self, event_type:str):
+        if self.event_type.text() == event_type:
+            return
+        self.event_type.setText(event_type)
+        self.stack.currentWidget().setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        if event_type == "Class":
+            self.class_options.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            self.class_options.adjustSize()
+            self.stack.setCurrentWidget(self.class_options)
+        elif event_type == "Recurring Event":
+            self.recurring_event_options.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            self.recurring_event_options.adjustSize()
+            self.stack.setCurrentWidget(self.recurring_event_options)
+        elif event_type == "One Time Event":
+            self.one_time_event_options.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            self.one_time_event_options.adjustSize()
+            self.stack.setCurrentWidget(self.one_time_event_options)
+        elif event_type == "One Time Class Event":
+            self.class_event_options.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            self.class_event_options.adjustSize()
+            self.stack.setCurrentWidget(self.class_event_options)
+        self.stack.adjustSize()
+        max_width = 0
+        for i in range(self.form_layout.rowCount()):
+            widget = self.form_layout.itemAt(i, QFormLayout.LabelRole).widget()
+            widget.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+            widget.adjustSize()
+            max_width = max(widget.size().width(), max_width)
+        # noinspection PyTypeChecker
+        current_widget_layout:QFormLayout = self.stack.currentWidget().layout()
+        for i in range(current_widget_layout.rowCount()):
+            widget = current_widget_layout.itemAt(i, QFormLayout.LabelRole).widget()
+            widget.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+            widget.adjustSize()
+            max_width = max(widget.size().width(), max_width)
+        for i in range(self.form_layout.rowCount()):
+            self.form_layout.itemAt(i, QFormLayout.LabelRole).widget().setMinimumWidth(max_width)
+        for i in range(current_widget_layout.rowCount()):
+            current_widget_layout.itemAt(i, QFormLayout.LabelRole).widget().setMinimumWidth(max_width)
+        self.adjustSize()
 
     def update_color(self):
         self.color_button.setStyleSheet("background-color: rgb({},{},{})".format(self.color_picker.currentColor().red(),
@@ -343,22 +502,53 @@ class Popup(QDialog):
                                                                                  self.color_picker.currentColor().blue()))
 
     def update_blocks(self, value):
+        if self.blocks == value:
+            return
         old_blocks = self.blocks
         self.blocks = value
-        rows = self.layout.rowCount()
+        class_options_layout:QFormLayout = self.class_options.layout()
         if self.blocks > old_blocks:
             #Change label of block 1
             if old_blocks == 1:
-                self.layout.itemAt(self.rows_before_blocks, QFormLayout.LabelRole).widget().setText("Block 1 Time:")
+                class_options_layout.itemAt(self.rows_before_blocks, QFormLayout.LabelRole).widget().setText("Block 1 Time:")
             for i in range(1, self.blocks - old_blocks + 1):
-                self.layout.insertRow(rows - 2 + i, "Block {} Time:".format(old_blocks + i), ClassTimePicker())
+                offset = self.rows_before_blocks + old_blocks + i - 1
+                widget = class_options_layout.itemAt(offset, QFormLayout.FieldRole)
+                label = class_options_layout.itemAt(offset, QFormLayout.LabelRole)
+                if widget is not None and label is not None:
+                    widget = widget.widget()
+                    label = label.widget()
+                    widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+                    label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+                    widget.adjustSize()
+                    label.adjustSize()
+                    widget.show()
+                    label.show()
+                else:
+                    picker = ClassTimePicker()
+                    picker.sizePolicy().setRetainSizeWhenHidden(False)
+                    class_options_layout.addRow("Block {} Time:".format(old_blocks + i), picker)
         elif self.blocks < old_blocks:
             if self.blocks == 1:
-                self.layout.itemAt(self.rows_before_blocks, QFormLayout.LabelRole).widget().setText("Block Time:")
-            rows = self.layout.rowCount()
-            for i in range(1, old_blocks - self.blocks + 1):
-                self.layout.removeRow(rows - (1 + i))
-        self.resize(self.sizeHint())
+                class_options_layout.itemAt(self.rows_before_blocks, QFormLayout.LabelRole).widget().setText("Block Time:")
+            for i in range(old_blocks - self.blocks):
+                offset = self.rows_before_blocks + old_blocks + i - 1
+                widget = class_options_layout.itemAt(offset, QFormLayout.FieldRole).widget()
+                label = class_options_layout.itemAt(offset, QFormLayout.LabelRole).widget()
+                print(widget.size())
+                widget.hide()
+                label.hide()
+                widget.adjustSize()
+                label.adjustSize()
+                self.class_options.adjustSize()
+                self.stack.adjustSize()
+                self.adjustSize()
+
+                print(widget.size())
+
+        # self.class_options.adjustSize()
+        # self.stack.adjustSize()
+        # self.adjustSize()
 
     def get_name(self):
         return self.name_edit.text()
