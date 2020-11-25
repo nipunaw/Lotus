@@ -347,6 +347,7 @@ class Canvas(QLabel):
         self.layer_painter.begin(self.activeLayers[0])
         self.layer_painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
         self.layer_painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
+        #print(len(self.activeLayers))
         self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[len(self.activeLayers)-1])
         #for i in range(1, len(self.activeLayers)):
         #    self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[i])
@@ -507,8 +508,10 @@ class UINoteWindow(QWidget):
         self.file_menu.addAction(self.open_option)
 
         self.open_recent_option = QtWidgets.QMenu("Open Recent", self)
-        if self.update_open_recent_menu():
-            self.file_menu.addMenu(self.open_recent_option)
+
+        self.file_menu.addMenu(self.open_recent_option)
+        if not self.update_open_recent_menu():
+            self.open_recent_option.setDisabled(True)
 
         # Headings
         self.heading_option = QtWidgets.QAction("Add/Edit Heading", self)
@@ -808,11 +811,11 @@ class UINoteWindow(QWidget):
         if self.file_path_2 == "":
             return
         self.file_path =  self.file_path_2
-        self.directories_update()
-        self.update_open_recent_menu()
 
         # Saving canvas
         self.canvas_window.label.save(self.file_path)
+        self.directories_update()
+        self.update_open_recent_menu()
         self.setWindowTitle(self.file_path)
 
     def directories_update(self):
@@ -958,19 +961,32 @@ class UINoteWindow(QWidget):
     def update_open_recent_menu(self):
         try:
             with open(DIRECTORY_FILE, "r") as f:
-                directories = f.readlines()
+                read_directories = f.readlines()
             f.close()
         except Exception as e:
             return False
+
+        directories = []
+        for i in read_directories:
+            if os.path.isfile(i.strip()):
+                directories.append(i)
+        with open(DIRECTORY_FILE, "w") as f:
+            f.writelines(p.strip() + "\n" for p in directories)
+
         if len(directories) == 0:
             return False
         else:
-            directories.reverse()
+            #directories.reverse()
             self.open_recent_option.clear()
-            for i in range(len(directories)):
+            dir_length = 7
+            if len(directories) < 7:
+                dir_length = len(directories)
+            #for i in range(len(directories)):
+            for i in range(dir_length):
                 action = QAction(directories[i], self.open_recent_option)
                 action.triggered.connect(lambda state, x=directories[i].strip(): self.open(x))
                 self.open_recent_option.addAction(action)
+            self.open_recent_option.setEnabled(True)
             return True
 
     def open_directory(self, file_path):
