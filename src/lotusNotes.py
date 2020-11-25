@@ -401,6 +401,21 @@ class Canvas(QLabel):
 
     def undo(self):
         if len(self.activeLayers) > 1:
+            #self.activeLayers[0] = self.activeLayers[0] or self.activeLayers[len(self.activeLayers) - 1]
+            #mask = self.activeLayers[len(self.activeLayers) - 1].createMaskFromColor()
+
+            # self.layer_painter.begin(self.activeLayers[0])
+            # self.layer_painter.setCompositionMode(QPainter.RasterOp_SourceXorDestination)
+            # self.layer_painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            # self.layer_painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
+            # self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[len(self.activeLayers) - 1])
+            # #self.layer_painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+            # self.layer_painter.end()
+            # self.setPixmap(self.activeLayers[0])
+
+            #self.update()
+            #self.activeLayers[0].begin(self.activeLayers[0])
+
             self.inactiveLayers.append(self.activeLayers.pop())
             self.change_master_layer()
             self.layer_change.emit()
@@ -409,7 +424,7 @@ class Canvas(QLabel):
     def redo(self): # Now finishing command pattern
         if len(self.inactiveLayers) > 0:
             self.activeLayers.append(self.inactiveLayers.pop())
-            self.change_master_layer()
+            self.update()
             self.layer_change.emit()
         #self.update()
 
@@ -779,6 +794,8 @@ class UINoteWindow(QWidget):
             self.save_as()
         else:
             self.canvas_window.label.save(self.file_path)
+            self.directories_update()
+            self.update_open_recent_menu()
         self.update_open_recent_menu()
 
     def save_as(self):
@@ -791,32 +808,39 @@ class UINoteWindow(QWidget):
         if self.file_path_2 == "":
             return
         self.file_path =  self.file_path_2
-        try:
-            #file exists
-            with open(DIRECTORY_FILE, "r") as f:
-                paths = f.read().splitlines()
-            count = len(paths)
-            if self.file_path in paths:
-                paths.remove(self.file_path)
-                paths.append(self.file_path)
-                with open(DIRECTORY_FILE, "w") as f:
-                    f.writelines(p + "\n" for p in paths)
-            elif count == 7 or (count > 7 and paths[8] == ""):
-                with open(DIRECTORY_FILE, "w") as f:
-                    paths = paths[0:6]
-                    paths.append(self.file_path)
-                    f.writelines(p + "\n" for p in paths)
-            elif count < 7:
-                with open(DIRECTORY_FILE, "a") as f:
-                    f.writelines([self.file_path + "\n"])
-        except Exception as e:
-            with open(DIRECTORY_FILE, "w+") as f:
-                f.write(self.file_path + "\n")
+        self.directories_update()
         self.update_open_recent_menu()
 
         # Saving canvas
         self.canvas_window.label.save(self.file_path)
         self.setWindowTitle(self.file_path)
+
+    def directories_update(self):
+        try:
+            #file exists
+            with open(DIRECTORY_FILE, "r") as f:
+                paths = f.read().splitlines()
+            #count = len(paths)
+            if self.file_path in paths:
+                paths.remove(self.file_path)
+                paths.insert(0, self.file_path)
+                with open(DIRECTORY_FILE, "w") as f:
+                    f.writelines(p + "\n" for p in paths)
+            else:
+                paths.insert(0, self.file_path)
+                with open(DIRECTORY_FILE, "w") as f:
+                    f.writelines(p + "\n" for p in paths)
+            # elif count == 7 or (count > 7 and paths[8] == ""):
+            #     with open(DIRECTORY_FILE, "w") as f:
+            #         paths = paths[0:6]
+            #         paths.append(self.file_path)
+            #         f.writelines(p + "\n" for p in paths)
+            # elif count < 7:
+            #     with open(DIRECTORY_FILE, "a") as f:
+            #         f.writelines([self.file_path + "\n"])
+        except Exception as e:
+            with open(DIRECTORY_FILE, "w+") as f:
+                f.write(self.file_path + "\n")
 
     ########### Heading ###########
     def heading(self):

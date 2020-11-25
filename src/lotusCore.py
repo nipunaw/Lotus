@@ -151,7 +151,9 @@ class MainWindow(QMainWindow):
 
     def startPreviousWindow(self):
         self.PreviousWindow = UIPreviousWindow(set_paths=False)
-        self.setWindowTitle("Non-Scheduled Notes")
+        self.PreviousWindow.setFixedSize(600, 400)
+        self.PreviousWindow.setMaximumSize(600, 400) # not working
+        self.setWindowTitle("Previous Notes")
         self.setCentralWidget(self.PreviousWindow)
 
         ########### Background color ###########
@@ -161,8 +163,13 @@ class MainWindow(QMainWindow):
 
         ########### Button handling ###########
         for i in range(len(self.PreviousWindow.directories)):
-            self.PreviousWindow.buttons[self.PreviousWindow.directories[i]].clicked.connect(lambda state, x=self.PreviousWindow.directories[i]: self.NoteWindowSeparate(x))
-
+             try:
+                 self.PreviousWindow.buttons[self.PreviousWindow.directories[i]].clicked.connect(
+                     lambda state, x=self.PreviousWindow.directories[i]: self.NoteWindowSeparate(x))
+                 self.PreviousWindow.other_buttons[self.PreviousWindow.directories[i]].clicked.connect(
+                        lambda state, x=self.PreviousWindow.directories[i]: self.NoteWindowSeparate(x))
+             except KeyError:
+                pass
         self.show()
 
     def update_header(self, name):
