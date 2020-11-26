@@ -21,32 +21,36 @@ class FloatingWidget(QtWidgets.QWidget):
         self.position_y = self.pos().y()
         self.width_container = 200
         self.height_container = 200
-        self.setFixedWidth(400)
         self.setGeometry(50, 50, self.width_container, self.height_container)
 
         self.setAttribute(QtCore.Qt.WA_StyledBackground, True)
         self.setStyleSheet('background-color: white; border:1px solid black;')
-
-        #print(self.geometry())
-        #self.setStyleSheet("background-color: red; border: 1px solid black")
-        self.move = False
-        #print(self.child_widget.geometry())
+        self.mouse_move = False
+        self.mouse_resize = False
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
-        if event.button() == Qt.LeftButton and self.position_x < event.pos().x() < self.width_container - self.position_x and self.position_y < event.pos().y() < self.height_container - self.position_y:
-            print("lit")
-            self.move = True
-            self.mouse_position = event.pos()
+        #print(self.pos().x())
+        # print(event.pos().x())
+        # print(event.pos().y())
+        # print(self.width())
+        if event.button() == Qt.LeftButton and (event.pos().x() < 10 or event.pos().y() < 10 or self.width() - event.pos().x() < 10 or self.height() - event.pos().y() < 10):
+            self.mouse_resize = True
+        elif event.button() == Qt.LeftButton: # and self.position_x < event.pos().x() < self.width_container - self.position_x and self.position_y < event.pos().y() < self.height_container - self.position_y:
+            self.mouse_move = True
+        self.move_position = QtCore.QPoint(event.globalX() - self.geometry().x(), event.globalY() - self.geometry().y())
+        self.resize_position = QtCore.QPoint(event.globalX() - self.width(), event.globalY() - self.height())
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
-        if self.move:
-            self.position_x = self.position_x + event.pos().x()-self.mouse_position.x()
-            self.position_y = self.position_y + event.pos().y() - self.mouse_position.y()
-            self.setGeometry(self.position_x, self.position_y , 200, 200)
-            self.mouse_position = event.pos()
+        if self.mouse_resize:
+            end_position = event.globalPos() - self.resize_position
+            self.resize(end_position.x(), end_position.y())
+        elif self.mouse_move:
+            end_position = event.globalPos() - self.move_position
+            self.move(end_position)
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
-        self.move = False
+        self.mouse_move = False
+        self.mouse_resize = False
 
 
 
