@@ -19,9 +19,9 @@ class FloatingWidget(QtWidgets.QWidget):
 
         self.position_x = self.pos().x()
         self.position_y = self.pos().y()
-        self.width_container = 200
-        self.height_container = 200
-        self.setGeometry(50, 50, self.width_container, self.height_container)
+        self.setMinimumWidth(self.child_widget.width())
+        self.setMinimumHeight(self.child_widget.height())
+        self.setGeometry(50, 50, self.child_widget.width(), self.child_widget.height())
 
         self.setAttribute(QtCore.Qt.WA_StyledBackground, True)
         self.setStyleSheet('background-color: white; border:1px solid black;')
@@ -29,10 +29,6 @@ class FloatingWidget(QtWidgets.QWidget):
         self.mouse_resize = False
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
-        #print(self.pos().x())
-        # print(event.pos().x())
-        # print(event.pos().y())
-        # print(self.width())
         if event.button() == Qt.LeftButton:
             if self.width() - event.pos().x() < 10 or self.height() - event.pos().y() < 10:
                 self.mouse_resize = True

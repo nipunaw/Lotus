@@ -456,6 +456,8 @@ class CanvasWindow(QScrollArea):
         self.layout.addWidget(self.label, Qt.AlignTop | Qt.AlignLeft)
 
         self.test_text = QLabel("Hello, how are you doing")
+        self.test_text.setFixedWidth(160)
+        self.test_text.setFixedHeight(15) # make sure sizing of label is good ahead of time
         self.test = FloatingWidget(self.test_text, self.label)
 
         self.setWidget(self.label)
