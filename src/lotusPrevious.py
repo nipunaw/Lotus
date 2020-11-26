@@ -41,9 +41,9 @@ class UIPreviousWindow(QWidget):
         self.home_button_layout = QtWidgets.QVBoxLayout()
         self.home_button_container.setLayout(self.home_button_layout)
 
-        self.recent_button_container = QWidget()
-        self.recent_button_layout = QtWidgets.QVBoxLayout() # self #self.recent_button_scroll
-        self.recent_button_container.setLayout(self.recent_button_layout)
+        self.all_button_container = QWidget()
+        self.all_button_layout = QtWidgets.QVBoxLayout() # self #self.all_button_scroll
+        self.all_button_container.setLayout(self.all_button_layout)
 
         self.home_button_scroll = QtWidgets.QScrollArea()  # self.home_button_container
         self.home_button_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -51,14 +51,14 @@ class UIPreviousWindow(QWidget):
         self.home_button_scroll.setWidgetResizable(True)
         self.home_button_scroll.setWidget(self.home_button_container)
 
-        self.recent_button_scroll = QtWidgets.QScrollArea() #self.recent_button_container
-        self.recent_button_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.recent_button_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.recent_button_scroll.setWidgetResizable(True)
-        self.recent_button_scroll.setWidget(self.recent_button_container)
+        self.all_button_scroll = QtWidgets.QScrollArea() #self.all_button_container
+        self.all_button_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.all_button_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.all_button_scroll.setWidgetResizable(True)
+        self.all_button_scroll.setWidget(self.all_button_container)
 
         self.parent_layout.addWidget(self.home_button_scroll)
-        self.parent_layout.addWidget(self.recent_button_scroll)
+        self.parent_layout.addWidget(self.all_button_scroll)
         self.parent_layout.setCurrentIndex(0)
 
         try:
@@ -99,11 +99,11 @@ class UIPreviousWindow(QWidget):
             class_button.clicked.connect(lambda state, name=i: self.class_buttons(name))
             self.home_button_layout.addWidget(class_button)
 
-        recent_button = QtWidgets.QPushButton("Recent Notes")
-        recent_button.setFixedHeight(30)
-        recent_button.clicked.connect(self.recent_notes)
-        recent_button.setStyleSheet(button_style)
-        self.home_button_layout.addWidget(recent_button)
+        all_button = QtWidgets.QPushButton("All Notes")
+        all_button.setFixedHeight(30)
+        all_button.clicked.connect(self.all_notes)
+        all_button.setStyleSheet(button_style)
+        self.home_button_layout.addWidget(all_button)
 
         vertical_spacer = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.home_button_layout.addItem(vertical_spacer)
@@ -114,7 +114,7 @@ class UIPreviousWindow(QWidget):
     def class_buttons(self, name):
         self.parent_layout.setCurrentWidget(self.class_layouts_scrolls[name])
 
-    def recent_notes(self):
+    def all_notes(self):
         self.parent_layout.setCurrentIndex(1)
 
     def delete_button(self, str):
@@ -137,7 +137,7 @@ class UIPreviousWindow(QWidget):
 
         back_button = QPushButton("Return Home")
         back_button.clicked.connect(self.return_home)
-        self.recent_button_layout.addWidget(back_button)
+        self.all_button_layout.addWidget(back_button)
 
         for x in self.name_classes:
             back_button = QPushButton("Return Home")
@@ -146,19 +146,18 @@ class UIPreviousWindow(QWidget):
 
         if len(self.directories) == 0:
             self.no_notes_text = QtWidgets.QLabel()
-            self.no_notes_text.setText("No recent notes to display")
-            self.recent_button_layout.addWidget(self.no_notes_text)
+            self.no_notes_text.setText("No notes to display")
+            self.all_button_layout.addWidget(self.no_notes_text)
 
         else:
             self.buttons = {}
             self.other_buttons = {}
             if not self.set_paths:
                 for i in range(len(self.directories)):
-                    if i < 7:
-                        self.buttons[self.directories[i]] = QPushButton(self.directories[i])
-                        self.buttons[self.directories[i]].setIcon(QIcon(QPixmap(self.directories[i].strip())))
-                        self.buttons[self.directories[i]].setIconSize(QSize(100,100))
-                        self.recent_button_layout.addWidget(self.buttons[self.directories[i]])
+                    self.buttons[self.directories[i]] = QPushButton(self.directories[i])
+                    self.buttons[self.directories[i]].setIcon(QIcon(QPixmap(self.directories[i].strip())))
+                    self.buttons[self.directories[i]].setIconSize(QSize(100,100))
+                    self.all_button_layout.addWidget(self.buttons[self.directories[i]])
 
                     directory_array = self.directories[i].split('/')
                     if directory_array[-5] == "data" and directory_array[-4].isdigit() and directory_array[
@@ -168,15 +167,15 @@ class UIPreviousWindow(QWidget):
                                 self.other_buttons[self.directories[i]] = QPushButton(self.directories[i])
                                 self.other_buttons[self.directories[i]].setIcon(QIcon(QPixmap(self.directories[i].strip())))
                                 self.other_buttons[self.directories[i]].setIconSize(QSize(100, 100))
-                                #self.recent_button_layout.addWidget(self.other_buttons[self.directories[i]])
+                                #self.all_button_layout.addWidget(self.other_buttons[self.directories[i]])
                                 self.class_layouts[x].addWidget(self.other_buttons[self.directories[i]])
             else:
                 for i in range(len(self.directories)):
                     self.buttons[self.directories[i]] = QPushButton(self.directories[i])
-                    self.recent_button_layout.addWidget(self.buttons[self.directories[i]])
+                    self.all_button_layout.addWidget(self.buttons[self.directories[i]])
         for x in self.name_classes:
             no_notes_text = QtWidgets.QLabel()
-            no_notes_text.setText("No class notes to display")
+            no_notes_text.setText("No notes to display for this class")
             if self.class_layouts[x].count() == 1:
                 self.no_notes_display(x, no_notes_text)
         self.add_spacer()
@@ -192,4 +191,4 @@ class UIPreviousWindow(QWidget):
              #print(self.class_layouts[x].count())
         vertical_spacer_2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Minimum,
                                                       QtWidgets.QSizePolicy.Expanding)
-        self.recent_button_layout.addSpacerItem(vertical_spacer_2)
+        self.all_button_layout.addSpacerItem(vertical_spacer_2)

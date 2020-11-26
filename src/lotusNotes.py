@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QMessageBox, QScrollAr
 
 from src.constants import CONFIG_FILE, DIRECTORY_FILE, SCHEDULE_FILE_PATH, SCHEDULED_NOTES_DIRECTORY, assets
 from src.lotusButtons import ToolButton
-
+from src.lotusFloating import FloatingWidget
 
 def default_config():
     os.makedirs(SCHEDULED_NOTES_DIRECTORY, exist_ok=True)
@@ -455,6 +455,9 @@ class CanvasWindow(QScrollArea):
         self.layout.setAlignment(Qt.AlignTop)
         self.layout.addWidget(self.label, Qt.AlignTop | Qt.AlignLeft)
 
+        self.test_text = QLabel("Hello, how are you doing")
+        self.test = FloatingWidget(self.test_text, self.label)
+
         self.setWidget(self.label)
         self.setLayout(self.layout)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -541,8 +544,6 @@ class UINoteWindow(QWidget):
         self.find_ocr.triggered.connect(self.ocr)
         self.ocr_menu = self.menu_bar.addMenu("OCR")
         self.ocr_menu.addAction(self.find_ocr)
-
-
 
         ########### Buttons ###########
         # Handled by resizeEvent
