@@ -33,20 +33,30 @@ class FloatingWidget(QtWidgets.QWidget):
         # print(event.pos().x())
         # print(event.pos().y())
         # print(self.width())
-        if event.button() == Qt.LeftButton and (event.pos().x() < 10 or event.pos().y() < 10 or self.width() - event.pos().x() < 10 or self.height() - event.pos().y() < 10):
-            self.mouse_resize = True
-        elif event.button() == Qt.LeftButton: # and self.position_x < event.pos().x() < self.width_container - self.position_x and self.position_y < event.pos().y() < self.height_container - self.position_y:
-            self.mouse_move = True
+        if event.button() == Qt.LeftButton:
+            if self.width() - event.pos().x() < 10 or self.height() - event.pos().y() < 10:
+                self.mouse_resize = True
+            elif event.pos().x() < 10 or event.pos().y() < 10:
+                self.mouse_resize = True
+                self.mouse_move = True
+            else:
+                self.mouse_move = True
         self.move_position = QtCore.QPoint(event.globalX() - self.geometry().x(), event.globalY() - self.geometry().y())
-        self.resize_position = QtCore.QPoint(event.globalX() - self.width(), event.globalY() - self.height())
+        self.resize_lr_position = QtCore.QPoint(event.globalX() - self.width(), event.globalY() - self.height())
+        self.resize_ur_position = QtCore.QPoint(event.globalX() + self.width(), event.globalY() + self.height())
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
-        if self.mouse_resize:
-            end_position = event.globalPos() - self.resize_position
+        if self.mouse_resize and self.mouse_move:
+            end_position = self.resize_ur_position - event.globalPos()
             self.resize(end_position.x(), end_position.y())
+            end_position = event.globalPos() - self.move_position
+            self.move(end_position)
         elif self.mouse_move:
             end_position = event.globalPos() - self.move_position
             self.move(end_position)
+        elif self.mouse_resize:
+            end_position = event.globalPos() - self.resize_lr_position # QGlobal - GGlobal + width
+            self.resize(end_position.x(), end_position.y())
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
         self.mouse_move = False
