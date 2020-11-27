@@ -32,8 +32,8 @@ def default_config():
         file = open(CONFIG_FILE, 'w')
         config = configparser.ConfigParser()
         config['DEFAULT'] = {'Name': '',
-                             'Pen_Size': '4',
-                             'Eraser_Size': '4',
+                             'Pen_Size': '5',
+                             'Eraser_Size': '5',
                              'Name_Heading': 'True'}
         config.write(file)
     file.close()
@@ -65,7 +65,8 @@ class Utensil:
                  cap_style : Qt.PenCapStyle = Qt.RoundCap,
                  join_style : Qt.PenJoinStyle = Qt.RoundJoin,
                  fill_style : Qt.BrushStyle = Qt.SolidPattern):
-        self.maxWidth = 50
+        self.maxWidth = 32
+        self.minWidth = 5
         self.color = color
         self.radius = radius
         self.brush_style = brush_style
@@ -79,7 +80,7 @@ class Utensil:
 
     def decrementWidth(self):
         result = self.radius - 1
-        self.radius = result if result >= 1 else 1
+        self.radius = result if result >= self.minWidth else self.minWidth
 
     def pen(self):
         pen = QtGui.QPen()
@@ -129,15 +130,28 @@ class Canvas(QLabel):
         self.pen_lastPoint = QtCore.QPoint()
         # Eraser default parameters
         self.eraser_lastPoint = QtCore.QPoint()
-        self.cursor = QtGui.QCursor()
-        self.cursor.setShape(Qt.CrossCursor)
-        self.setCursor(self.cursor)
+        self.cursor_update()
+        #self.cursor_pix_scaled = QPixmap(assets["pen_eraser_cursor"]).scaled(QSize(self.current_utensil.radius, self.current_utensil.radius), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        #self.cursor = QtGui.QCursor(self.cursor_pix_scaled)
+        #self.cursor.setShape(Qt.CrossCursor)
+        #self.setCursor(self.cursor)
         # Drawing path
         self.drawing_path_layers = []
         #self.drawing_path = QtGui.QPainterPath()
         # Painters
         self.painter = QPainter()
         self.layer_painter = QPainter()
+
+    def cursor_update(self):
+        if not self.current_utensil == Utensils.HIGHLIGHTER:
+            cursor_pixmap = QPixmap(assets["pen_eraser_cursor"]).scaled(QSize(self.current_utensil.radius, self.current_utensil.radius), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            cursor = QtGui.QCursor(cursor_pixmap)
+            self.setCursor(cursor)
+        else:
+            cursor = QtGui.QCursor()
+            cursor.setShape(Qt.CrossCursor)
+            self.setCursor(cursor)
+
 
     def resizeLayer(self, i, size, active=True):
         temp = self.activeLayers[i] if active else self.inactiveLayers[i]
@@ -624,11 +638,15 @@ class UINoteWindow(QWidget):
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         if event.key() == Qt.Key_BracketLeft:
-            for u in Utensils:
-                u.decrementWidth()
+            self.canvas_window.label.current_utensil.decrementWidth()
+            #for u in Utensils:
+            #    u.decrementWidth()
+            self.canvas_window.label.cursor_update()
         elif event.key() == Qt.Key_BracketRight:
-            for u in Utensils:
-                u.incrementWidth()
+            self.canvas_window.label.current_utensil.incrementWidth()
+            #for u in Utensils:
+            #    u.incrementWidth()
+            self.canvas_window.label.cursor_update()
 
     def savePopup(self):
         self.save_prompt = QtWidgets.QDialog(self)
@@ -648,6 +666,7 @@ class UINoteWindow(QWidget):
 
     def erase(self):
         self.canvas_window.label.setUtensil(Utensils.ERASER)
+        self.canvas_window.label.cursor_update()
         self.color_indicator_update()
         self.eraser_button.setEnabled(False)
         self.highlighter_button.setEnabled(True)
@@ -655,6 +674,7 @@ class UINoteWindow(QWidget):
 
     def pen(self):
         self.canvas_window.label.setUtensil(Utensils.PEN)
+        self.canvas_window.label.cursor_update()
         self.color_indicator_update()
         self.pen_button.setEnabled(False)
         self.highlighter_button.setEnabled(True)
@@ -662,6 +682,7 @@ class UINoteWindow(QWidget):
 
     def highlight(self):
         self.canvas_window.label.setUtensil(Utensils.HIGHLIGHTER)
+        self.canvas_window.label.cursor_update()
         self.color_indicator_update()
         self.highlighter_button.setEnabled(False)
         self.pen_button.setEnabled(True)

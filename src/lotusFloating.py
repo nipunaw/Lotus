@@ -34,6 +34,24 @@ class FloatingWidget(QtWidgets.QWidget):
         self.top_side = False
         self.bottom_side = False
 
+
+
+        ## Right-click options
+        self.menu = QtWidgets.QMenu(self)
+        deleteAction = QtWidgets.QAction('Delete', self)
+        deleteAction.triggered.connect(self.deleteLater)
+        self.menu.addAction(deleteAction)
+
+        ## Cursor
+        self.setMouseTracking(True)
+        self.child_widget.setMouseTracking(True)
+        self.curr_cursor_shape = QtGui.QCursor().shape()
+        self.cursor = QtGui.QCursor()
+        self.installEventFilter(self)
+
+    def leaveEvent(self, event):
+       self.cursor.setShape(self.curr_cursor_shape)
+
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         if event.button() == Qt.LeftButton:
             if event.pos().x() < 10:
@@ -50,11 +68,33 @@ class FloatingWidget(QtWidgets.QWidget):
         self.start_size = QtCore.QPoint(self.width(), self.height())
         self.start_geometry = QtCore.QPoint(self.geometry().x(), self.geometry().y())
         self.start_mouse_position = event.globalPos()
-        # self.resize_lr_position = QtCore.QPoint(event.globalX() - self.width(), event.globalY() - self.height())
-        # self.resize_cl_position = QtCore.QPoint(event.globalX() + self.width(), event.globalY() - self.height())
-        # self.resize_ur_position = QtCore.QPoint(event.globalX() + self.width(), event.globalY() + self.height())
+
+        if event.button() == Qt.RightButton:
+            self.menu.popup(QtGui.QCursor.pos())
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
+        #print(('Mouse coords: ( %d : %d )' % (event.x(), event.y())))
+        self.curr_cursor_shape = QtGui.QCursor().shape() ## Setting cursor
+        if event.pos().x() < 10 and event.pos().y() < 10:
+            self.cursor.setShape(Qt.SizeFDiagCursor)
+        elif self.width() - event.pos().x() < 10 and event.pos().y() < 10:
+            self.cursor.setShape(Qt.SizeBDiagCursor)
+        elif self.width() - event.pos().x() < 10 and self.height() - event.pos().y() < 10:
+            self.cursor.setShape(Qt.SizeFDiagCursor)
+        elif event.pos().x() < 10 and self.height() - event.pos().y() < 10:
+            self.cursor.setShape(Qt.SizeBDiagCursor)
+        elif event.pos().x() < 10:
+            self.cursor.setShape(Qt.SizeHorCursor)
+        elif event.pos().y() < 10:
+            self.cursor.setShape(Qt.SizeVerCursor)
+        elif self.width() - event.pos().x() < 10:
+            self.cursor.setShape(Qt.SizeHorCursor)
+        elif self.height() - event.pos().y() < 10:
+            self.cursor.setShape(Qt.SizeVerCursor)
+        else:
+            self.cursor.setShape(Qt.ArrowCursor)
+        self.setCursor(self.cursor)
+
         if self.move_only:
             self.move(event.globalPos() - self.start_mouse_position + self.start_geometry)
         elif self.left_side and self.top_side: # upper left corner
