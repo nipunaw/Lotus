@@ -13,14 +13,12 @@ import os
 from datetime import date
 from enum import Enum
 import pytesseract
-import cv2
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt, pyqtSignal, QSize, QPoint, QRect
 from PyQt5.QtGui import QRegion, QColor, QPainter, QIcon, QPixmap
 from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QMessageBox, QScrollArea, QGridLayout, QHBoxLayout, \
     QVBoxLayout, QSizePolicy, QAction
-from spellchecker import SpellChecker
 
 from src.constants import CONFIG_FILE, DIRECTORY_FILE, SCHEDULE_FILE_PATH, SCHEDULED_NOTES_DIRECTORY, assets
 from src.lotusButtons import ToolButton
@@ -457,9 +455,9 @@ class CanvasWindow(QScrollArea):
         self.layout.setAlignment(Qt.AlignTop)
         self.layout.addWidget(self.label, Qt.AlignTop | Qt.AlignLeft)
 
-        self.test_text = QLabel("Hello, how are you doing")
-        self.test_text.setGeometry(0, 0, 160, 20) # make sure sizing of label is good ahead of time
-        self.test = FloatingWidget(self.test_text, self.label)
+        # self.header_text = QtWidgets.QLineEdit()
+        # self.header_text.setGeometry(0, 0, 160, 80) # make sure sizing of label is good ahead of time
+        # self.header = FloatingWidget(self.header_text, self.label)
 
         self.setWidget(self.label)
         self.setLayout(self.layout)
@@ -551,13 +549,15 @@ class UINoteWindow(QWidget):
         ########### Buttons ###########
         # Handled by resizeEvent
         self.font = QtGui.QFont("Times New Roman", 20, QtGui.QFont.Bold)
-        self.title = QtWidgets.QLineEdit()
+        self.heading_title = QtWidgets.QLineEdit()
         config = configparser.ConfigParser()
         config.read(CONFIG_FILE)
         name = config['DEFAULT']['name']
-        self.name = QtWidgets.QLineEdit(name)
-        self.course = QtWidgets.QComboBox()
+        self.heading_name = QtWidgets.QLineEdit(name)
+        self.course = QtWidgets.QLineEdit() #QtWidgets.QComboBox()
         self.add_date = True
+
+
 
         ########### Layout ############
         self.setMinimumSize(1200, 600)
@@ -565,29 +565,33 @@ class UINoteWindow(QWidget):
         self.canvas_window.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.layout = QVBoxLayout()
 
+        self.header_text = QtWidgets.QPlainTextEdit()
+        self.header_text.setGeometry(0, 0, 160, 20)  # make sure sizing of label is good ahead of time
+        self.header_widget = FloatingWidget(self.header_text, self.canvas_window)
+        self.header_widget.hide()
 
-        self.heading_title = QtWidgets.QLineEdit()
-        title_font = QtGui.QFont("Times New Roman", 20)
-        self.heading_title.setFont(title_font)
-        self.heading_title.setStyleSheet("border: 0px")
-        self.layout.addWidget(self.heading_title)
 
-        subheading_font = QtGui.QFont("Times New Roman", 15)
-        self.heading_name = QtWidgets.QLineEdit()
-        self.heading_name.setFont(subheading_font)
-        self.heading_name.setStyleSheet("border: 0px")
-        self.layout.addWidget(self.heading_name)
+        #self.heading_title = QtWidgets.QLineEdit()
+        # title_font = QtGui.QFont("Times New Roman", 20)
+        # self.heading_title.setFont(title_font)
+        # self.heading_title.setStyleSheet("border: 0px")
+        # self.layout.addWidget(self.heading_title)
+
+        # subheading_font = QtGui.QFont("Times New Roman", 15)
+        # self.heading_name = QtWidgets.QLineEdit()
+        # self.heading_name.setFont(subheading_font)
+        # self.heading_name.setStyleSheet("border: 0px")
+        # self.layout.addWidget(self.heading_name)
 
         self.heading_course = QtWidgets.QLineEdit()
-        self.heading_course.setFont(subheading_font)
-        self.heading_course.setStyleSheet("border: 0px")
-        self.layout.addWidget(self.heading_course)
+        # self.heading_course.setFont(subheading_font)
+        # self.heading_course.setStyleSheet("border: 0px")
+        # self.layout.addWidget(self.heading_course)
 
         self.heading_date = QtWidgets.QLineEdit()
-        self.heading_date.setFont(subheading_font)
-        self.heading_date.setStyleSheet("border: 0px")
-        self.layout.addWidget(self.heading_date)
-
+        # self.heading_date.setFont(subheading_font)
+        # self.heading_date.setStyleSheet("border: 0px")
+        # self.layout.addWidget(self.heading_date)
 
         self.layout.setContentsMargins(0,0,0,0)
         self.layout.setSpacing(0)
@@ -862,32 +866,32 @@ class UINoteWindow(QWidget):
         header_dialog = QtWidgets.QDialog(self)
         header_dialog.setWindowTitle("Add a header")
         layout = QtWidgets.QFormLayout()
-        title_edit = QtWidgets.QLineEdit()
-        name_edit = QtWidgets.QLineEdit()
-        config = configparser.ConfigParser()
-        config.read(CONFIG_FILE)
-        name = config['DEFAULT']['name']
-        name_edit.setText(name)
-        if self.name.text() != name:
-            name_edit.setText(self.name.text())
-        title_edit.setText(self.title.text())
-        layout.addRow(self.tr("&Title:"), title_edit, )
-        layout.addRow(self.tr("&Name:"), name_edit)
+        # title_edit = QtWidgets.QLineEdit()
+        # name_edit = QtWidgets.QLineEdit()
+        # config = configparser.ConfigParser()
+        # config.read(CONFIG_FILE)
+        # name = config['DEFAULT']['name']
+        # name_edit.setText(name)
+        # if self.name.text() != name:
+        #     name_edit.setText(self.name.text())
+        # title_edit.setText(self.heading_title.text())
+        layout.addRow(self.tr("&Title:"), self.heading_title)
+        layout.addRow(self.tr("&Name:"), self.heading_name)
         time_checkbox = QtWidgets.QCheckBox("Add Date", self)
         time_checkbox.setChecked(self.add_date)
         dropdown = QtWidgets.QComboBox(self)
         for classes in name_classes:
             dropdown.addItem(classes)
         dropdown.addItem("---")
-        dropdown.setCurrentText(self.course.currentText())
+        dropdown.setCurrentText(self.course.text())
         layout.addWidget(time_checkbox)
         layout.addRow(dropdown)
-        self.title = title_edit
-        self.name = name_edit
+        # self.title = title_edit
+        # self.name = name_edit
 
         add_button = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel)
         add_button.accepted.connect(
-            lambda: self.accept_header(self.title, self.name, dropdown, time_checkbox, header_dialog))
+            lambda: self.accept_header( dropdown, time_checkbox, header_dialog))
         add_button.rejected.connect(header_dialog.close)
         add_button.setOrientation(Qt.Horizontal)
         layout.addWidget(add_button)
@@ -896,8 +900,8 @@ class UINoteWindow(QWidget):
         header_dialog.show()
         self.update()
 
-    def accept_header(self, title, name, course, time_checkbox, dialog):
-        if len(title.text()) == 0 and len(name.text()) == 0 and course.currentText() == "---" and (not time_checkbox.isChecked()):
+    def accept_header(self, course, time_checkbox, dialog):
+        if len(self.heading_title.text()) == 0 and len(self.heading_name.text()) == 0 and course.currentText() == "---" and (not time_checkbox.isChecked()):
             #prompt to add at least one field
             error = QtWidgets.QMessageBox()
             error.setText("Please fill out at least one entry.")
@@ -908,33 +912,11 @@ class UINoteWindow(QWidget):
         # time = datetime.now()
         date_str = today.strftime("%B %d, %Y")
         # time_str = time.strftime("%H:%M:%S")
-        self.heading_title.setText(title.text())
-        self.heading_name.setText(name.text())
-        self.heading_course.setText(course.currentText())
-        self.heading_date.setText(date_str)
-        # painter = QtGui.QPainter(self.canvas_window.label.canvas)
-        # rect = QtCore.QRect(8, 20, 750, 150)
-        # painter.fillRect(rect, Qt.white)
-        # painter.setFont(self.font)
-        # font_size = self.font.pointSize()
-        # x = 0
-        # if len(title.text()) != 0:
-        #     painter.drawText(10, 30 + font_size, title.text())
-        # else:
-        #     x = -25
-        # if len(name.text()) != 0:
-        #     painter.drawText(10, 55 + font_size + x, name.text())
-        # else:
-        #     x = x - 25
-        # painter.setPen(Qt.black)
-        # self.add_date = time_checkbox.isChecked()
-        # if self.add_date:
-        #     painter.drawText(10, 80 + font_size + x, date_str)
-        # else:
-        #     x = x - 25
-        # self.course = course
-        # if course.currentText() != "---":
-        #     painter.drawText(10, 105 + font_size + x, course.currentText())
+        composed_heading = self.heading_title.text() + "\n" + self.heading_name.text() + "\n" + course.currentText() + "\n" + date_str
+        self.header_text.document().setPlainText(composed_heading)
+        self.header_text.setGeometry(0, 0, 160, 80)  # make sure sizing of label is good ahead of time
+        self.header_widget = FloatingWidget(self.header_text, self.canvas_window)
+        self.header_widget.show()
         dialog.close()
         self.update()
         return
@@ -947,7 +929,7 @@ class UINoteWindow(QWidget):
         dialog = QtWidgets.QDialog()
         time_checkbox = QtWidgets.QCheckBox("", self)
         time_checkbox.setChecked(self.add_date)
-        self.accept_header(self.title, self.name, self.course, time_checkbox, dialog)
+        self.accept_header( self.course, time_checkbox, dialog)
 
     def open(self, file_path:str=None):
         if self.canvas_window.label.hasChanged():
@@ -1014,16 +996,7 @@ class UINoteWindow(QWidget):
         if self.canvas_window.label.hasChanged() or self.file_path == "":
             self.savePopup()
         if not self.canvas_window.label.hasChanged():
-            # image pre-processing
-            img = cv2.imread(self.file_path, cv2.IMREAD_GRAYSCALE)                      # grayscales image
-            thresh = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1] # threshing
-            gauss = cv2.GaussianBlur(thresh, (3, 3), 0)                                 # gaussian blurring
-            custom_config = r'-l eng --oem 3 --psm 6 '
-
-
-            ocr_findings = pytesseract.image_to_string(gauss, config=custom_config)
-            #ocr_findings = pytesseract.image_to_string(Image.open(self.file_path))
-
+            ocr_findings = pytesseract.image_to_string(Image.open(self.file_path))
             ocr_prompt = QtWidgets.QDialog(self)
             ocr_prompt.setWindowTitle("Typed Characters found (OCR)")
             options = QtWidgets.QDialogButtonBox.Close
@@ -1031,16 +1004,6 @@ class UINoteWindow(QWidget):
             ocr_prompt.buttonBox.rejected.connect(ocr_prompt.reject)
             ocr_prompt.layout = QtWidgets.QVBoxLayout()
             label = QLabel(ocr_prompt)
-
-            #Clean up findings by running it through a spell checker
-            spell = SpellChecker()
-            ocr_findings = ocr_findings.split()
-            misspelled = spell.unknown(ocr_findings)
-            separator = " "
-            ocr_findings = separator.join(ocr_findings)
-            for word in misspelled:
-                ocr_findings = ocr_findings.replace(word,spell.correction(word))
-
             label.setText("Found: \n" + ocr_findings)
             ocr_prompt.layout.addWidget(label)
             ocr_prompt.layout.addWidget(ocr_prompt.buttonBox)
