@@ -15,5 +15,16 @@ assets = {
     "schedule": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/schedule.png'),
     "scheduleDarker": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/scheduleDarker.png'),
     "time_date" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/time_date.png'),
-    "lato" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/Lato-Regular.ttf')
+    "lato" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/Lato-Regular.ttf'),
+    "logo_black" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/logo_black.png'),
+    "settings" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/settings.png'),
+    "pen" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/pen.png'),
+    "eraser" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/eraser.png'),
+    "highlighter" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/highlighter.png'),
+    "undo" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/undo.png'),
+    "redo" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/redo.png'),
+    "clear" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/clear.png'),
+    "home" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/home.png'),
+    "color_wheel" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/color_wheel.png'),
+    "color_indicator" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/color_indicator.png')
 }
