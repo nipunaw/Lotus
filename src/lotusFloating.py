@@ -100,31 +100,42 @@ class FloatingWidget(QtWidgets.QWidget):
         elif self.left_side and self.top_side: # upper left corner
             resize_point = self.start_mouse_position - event.globalPos() + self.start_size
             self.resize(resize_point.x(), resize_point.y())
-            self.move(event.globalPos() - self.start_mouse_position + self.start_geometry)
+            if self.width() == self.minimumWidth() and self.height() == self.minimumHeight(): # additional check necessary
+                pass
+            elif self.width() == self.minimumWidth():
+                self.move(self.geometry().x(), event.globalY() - self.start_mouse_position.y() + self.start_geometry.y())
+            elif self.height() == self.minimumHeight():
+                self.move(event.globalX() - self.start_mouse_position.x() + self.start_geometry.x(), self.geometry().y())
+            else:
+                self.move(event.globalPos() - self.start_mouse_position + self.start_geometry)
         elif self.right_side and self.top_side: # upper right corner
             resize_point = self.start_mouse_position - event.globalPos() + self.start_size
             resize_point_inverted = event.globalPos() - self.start_mouse_position + self.start_size
             self.resize(resize_point_inverted.x(), resize_point.y())
-            self.move(self.start_geometry.x(), event.globalY() - self.start_mouse_position.y() + self.start_geometry.y())
+            if self.height() != self.minimumHeight():  # additional check necessary
+                self.move(self.start_geometry.x(), event.globalY() - self.start_mouse_position.y() + self.start_geometry.y())
         elif self.left_side and self.bottom_side: # lower left corner
             resize_point = self.start_mouse_position - event.globalPos() + self.start_size
             resize_point_inverted = event.globalPos() - self.start_mouse_position + self.start_size
             self.resize(resize_point.x(), resize_point_inverted.y())
-            self.move(event.globalX() - self.start_mouse_position.x() + self.start_geometry.x(), self.start_geometry.y())
+            if self.width() != self.minimumWidth():  # additional check necessary
+                self.move(event.globalX() - self.start_mouse_position.x() + self.start_geometry.x(), self.start_geometry.y())
         elif self.right_side and self.bottom_side: # lower right corner
             resize_point_inverted = event.globalPos() - self.start_mouse_position + self.start_size
             self.resize(resize_point_inverted.x(), resize_point_inverted.y())
         elif self.left_side: # left side
             resize_point = self.start_mouse_position - event.globalPos() + self.start_size
             self.resize(resize_point.x(), self.start_size.y())
-            self.move(event.globalX() - self.start_mouse_position.x() + self.start_geometry.x(), self.start_geometry.y())
+            if self.width() != self.minimumWidth():  # additional check necessary
+                self.move(event.globalX() - self.start_mouse_position.x() + self.start_geometry.x(), self.start_geometry.y())
         elif self.right_side: # right side
             resize_point_inverted = event.globalPos() - self.start_mouse_position + self.start_size
             self.resize(resize_point_inverted.x(), self.start_size.y())
         elif self.top_side: # top side
             resize_point = self.start_mouse_position - event.globalPos() + self.start_size
             self.resize(self.start_size.x(), resize_point.y())
-            self.move(self.start_geometry.x(), event.globalY() - self.start_mouse_position.y() + self.start_geometry.y())
+            if self.height() != self.minimumHeight(): # additional check necessary
+                self.move(self.start_geometry.x(), event.globalY() - self.start_mouse_position.y() + self.start_geometry.y())
         elif self.bottom_side: # bottom side
             resize_point_inverted = event.globalPos() - self.start_mouse_position + self.start_size
             self.resize(self.start_size.x(), resize_point_inverted.y())

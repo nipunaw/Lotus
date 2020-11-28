@@ -473,6 +473,10 @@ class CanvasWindow(QScrollArea):
         self.test_text.setGeometry(0, 0, 160, 20) # make sure sizing of label is good ahead of time
         self.test = FloatingWidget(self.test_text, self.label)
 
+        # self.tableWidget = QtWidgets.QLineEdit()
+        # self.tableWidget.setGeometry(0, 0, 200, 200)
+        # self.test_2 = FloatingWidget(self.tableWidget, self.label)
+
         self.setWidget(self.label)
         self.setLayout(self.layout)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
