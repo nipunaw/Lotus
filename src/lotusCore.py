@@ -11,14 +11,14 @@ import src.wsl
 ########### PyQT5 imports ###########
 import sys
 from PyQt5.QtWidgets import QApplication , QMainWindow , QPushButton , QWidget
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 ########### File imports ###########
 import configparser
-from src.lotusHub import UIHubWindow  # , set_name
+from src.lotusHub import UIHubWindow
 from src.lotusNotes import UINoteWindow, set_default_eraser_width, set_default_pen_width
 from src.lotusPrevious import UIPreviousWindow
-from src.lotusCalender import UICalendarWindow
+from src.lotusCalender import UICalendarWindow, Schedule
 from src.lotusSettings import UISettingsWindow
 from src.constants import CONFIG_FILE, SCHEDULED_NOTES_DIRECTORY
 ########### Other imports ###########
@@ -31,6 +31,8 @@ class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
         self.default_config()
+        self.schedule = Schedule()
+        self.schedule.connect_buttons.connect(self.connect_scheduled_notes_buttons)
         self.first_time = True
         self.newNoteCount = 0
         self.newNotes = []
@@ -47,8 +49,8 @@ class MainWindow(QMainWindow):
             file = open(CONFIG_FILE, 'w')
             config = configparser.ConfigParser()
             config['DEFAULT'] = {'Name': '',
-                                 'Pen_Size': '4',
-                                 'Eraser_Size': '4',
+                                 'Pen_Size': '5',
+                                 'Eraser_Size': '5',
                                  'Name_Heading': 'True'}
             config.write(file)
         file.close()
@@ -62,7 +64,7 @@ class MainWindow(QMainWindow):
     def HubWindowSeparate(self):
         if self.first_time:
             self.first_time = False
-            self.HubWindow = UIHubWindow()
+            self.HubWindow = UIHubWindow(self.schedule)
             self.HubWindow.setFixedSize(800, 500)
             self.HubWindow.setWindowTitle("Lotus Home")
 
@@ -73,9 +75,9 @@ class MainWindow(QMainWindow):
 
             ########### Button handling ###########
             self.HubWindow.new_note_button.clicked.connect(lambda: self.NoteWindowSeparate(None))
-            self.HubWindow.schedule_button.clicked.connect(self.startCalenderWindow)
+            self.HubWindow.schedule_button.clicked.connect(
+                lambda state, x=self.schedule: self.startCalenderWindow(self.schedule))
             self.HubWindow.previous_notes_button.clicked.connect(self.startPreviousWindow)
-            self.HubWindow.settings_button.clicked.connect(self.startSettingsWindow)
             self.HubWindow.show()
 
         elif self.HubWindow.isHidden():
@@ -101,18 +103,21 @@ class MainWindow(QMainWindow):
             #self.raise_()
 
 
-    def NoteWindowSeparate(self, directory, scheduled=False, cls=None, date=None):
-        window = UINoteWindow(directory, scheduled=scheduled)
+    def NoteWindowSeparate(self, file_path=None, scheduled=False, event_name=None, event_date=None, event_time=None):
+        window = UINoteWindow(file_path=file_path, scheduled=scheduled)
         self.newNotes.append(window)
-        if directory:
-            if scheduled and cls is not None:
-                cls_title = "{} - {} - Scheduled Notes".format(cls["name"], date.toString("MM/dd/yyyy"), cls)
-                self.newNotes[self.newNoteCount].setWindowTitle(cls_title)
+        if file_path:
+            if scheduled:
+                if not os.path.isfile(file_path):
+                    file_name = "{}-{}.jpg".format(event_name, event_time.toString("HHmmAP"))
+                    os.makedirs(file_path.replace(file_name, ""), exist_ok=True)
+                window_title = "{} - {} - {} - Scheduled Notes".format(event_name, event_date.toString("MM/dd/yyyy"), event_time.toString("HH:mm AP"))
+                self.newNotes[self.newNoteCount].setWindowTitle(window_title)
             else:
                 window.deleted_file.connect(self.PreviousWindow.delete_button)
-                self.newNotes[self.newNoteCount].setWindowTitle(directory)
+                self.newNotes[self.newNoteCount].setWindowTitle(file_path)
         else:
-            self.newNotes[self.newNoteCount].setWindowTitle("New Note " + str(self.newNoteCount + 1) if directory is None else directory)
+            self.newNotes[self.newNoteCount].setWindowTitle("New Note " + str(self.newNoteCount + 1))
         self.newNotes[self.newNoteCount].home_button.clicked.connect(self.HubWindowSeparate)
         self.newNotes[self.newNoteCount].show()
         self.newNoteCount += 1
@@ -164,13 +169,26 @@ class MainWindow(QMainWindow):
         ########### Button handling ###########
         for i in range(len(self.PreviousWindow.directories)):
              try:
+                 # self.PreviousWindow.buttons[self.PreviousWindow.directories[i]].clicked.connect(
+                 #     lambda state, x=self.PreviousWindow.directories[i]: self.NoteWindowSeparate(x))
                  self.PreviousWindow.buttons[self.PreviousWindow.directories[i]].clicked.connect(
-                     lambda state, x=self.PreviousWindow.directories[i]: self.NoteWindowSeparate(x))
+                     lambda state, x=self.PreviousWindow.directories[i]: self.NoteWindowSeparate(file_path=x))
                  self.PreviousWindow.other_buttons[self.PreviousWindow.directories[i]].clicked.connect(
                         lambda state, x=self.PreviousWindow.directories[i]: self.NoteWindowSeparate(x))
              except KeyError:
                 pass
+
         self.show()
+
+    def connect_scheduled_notes_buttons(self, buttons: list):
+        for (button, name, date, time) in buttons:
+            file_name = "{}-{}.jpg".format(name, time.toString("HHmmAP"))
+            file_path = SCHEDULED_NOTES_DIRECTORY + "{}/{}/{}/{}".format(date.year(), date.month(), date.day(),
+                                                                         file_name)
+            button.clicked.connect(
+                lambda state, w=file_path, x=name, y=date, z=time: self.NoteWindowSeparate(scheduled=True, file_path=w,
+                                                                                           event_name=x, event_date=y,
+                                                                                           event_time=z))
 
     def update_header(self, name):
         self.HubWindow.user_welcome.setText("Welcome back "+ name)
@@ -197,13 +215,10 @@ class MainWindow(QMainWindow):
                 os.makedirs(file_path.replace("/{}.jpg".format(cls["name"]), ""), exist_ok=True)
             button.clicked.connect(lambda state, x=file_path, y=cls, z=date: self.NoteWindowSeparate(x, scheduled=True, cls=y, date=z))
 
-    def startCalenderWindow(self):
-        self.CalenderWindow = UICalendarWindow(parent=self)
+    def startCalenderWindow(self, schedule: Schedule):
+        self.CalenderWindow = UICalendarWindow(schedule, parent=self)
         self.setWindowTitle("Scheduled Notes")
         self.setCentralWidget(self.CalenderWindow)
-        self.CalenderWindow.calendarWidget.buttonsUpdated.connect(self.connectCalendarWindowButtons)
-        ########### Button handling ###########
-        # self.CalanderWindow.go_back_button.clicked.connect(self.startHubWindow)
         self.show()
 
 def main():

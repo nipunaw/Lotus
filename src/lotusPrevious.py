@@ -6,16 +6,17 @@
 # Carlos Morales-Diaz
 # Spencer Bass
 
+import json
+import os
+
 ########### PyQT5 imports ###########
 from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QPixmap, QIcon, QImage
+from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QPushButton, QWidget
-from PyQt5.uic.properties import QtCore
 
 from src.constants import DIRECTORY_FILE, SCHEDULE_FILE_PATH, assets
-import json
-import os
+
 
 class UIPreviousWindow(QWidget):
     def __init__(self, set_paths, parent=None):
