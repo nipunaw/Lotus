@@ -19,9 +19,10 @@ from src.constants import DIRECTORY_FILE, SCHEDULE_FILE_PATH, assets
 
 
 class UIPreviousWindow(QWidget):
-    def __init__(self, set_paths, parent=None):
+    def __init__(self, schedule, set_paths, parent=None):
         super(UIPreviousWindow, self).__init__(parent)
         self.set_paths = set_paths
+        self.schedule = schedule
         # Creates file if not created
         try:
             file = open(DIRECTORY_FILE, 'r')
@@ -62,26 +63,43 @@ class UIPreviousWindow(QWidget):
         self.parent_layout.addWidget(self.all_button_scroll)
         self.parent_layout.setCurrentIndex(0)
 
-        try:
-            with open(SCHEDULE_FILE_PATH) as f:
-                data = json.load(f)
-        except FileNotFoundError:
-            data = []
+        # try:
+        #     with open(SCHEDULE_FILE_PATH) as f:
+        #         data = json.load(f)
+        # except FileNotFoundError:
+        #     data = []
+
+
         self.name_classes = []
         self.class_layouts = {}
         self.class_layouts_containers = {}
         self.class_layouts_scrolls = {}
-        for b in data:
-            self.name_classes.append(b['name'])
-            self.class_layouts_containers[b['name']] = QWidget()
-            self.class_layouts[b['name']] = QtWidgets.QVBoxLayout(self)
-            self.class_layouts_containers[b['name']].setLayout(self.class_layouts[b['name']])
-            self.class_layouts_scrolls[b['name']] = QtWidgets.QScrollArea()
-            self.class_layouts_scrolls[b['name']].setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-            self.class_layouts_scrolls[b['name']].setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-            self.class_layouts_scrolls[b['name']].setWidgetResizable(True)
-            self.class_layouts_scrolls[b['name']].setWidget(self.class_layouts_containers[b['name']])
-            self.parent_layout.addWidget(self.class_layouts_scrolls[b['name']])
+
+        for (event_name, data) in self.schedule.schedule.items():
+            event_type = data['type']
+            if event_type == 'class' or event_type == 'recurring event':
+                self.name_classes.append(event_name) ## Will this also catch one-time class events?
+                self.class_layouts_containers[event_name] = QWidget()
+                self.class_layouts[event_name] = QtWidgets.QVBoxLayout(self)
+                self.class_layouts_containers[event_name].setLayout(self.class_layouts[event_name])
+                self.class_layouts_scrolls[event_name] = QtWidgets.QScrollArea()
+                self.class_layouts_scrolls[event_name].setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+                self.class_layouts_scrolls[event_name].setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+                self.class_layouts_scrolls[event_name].setWidgetResizable(True)
+                self.class_layouts_scrolls[event_name].setWidget(self.class_layouts_containers[event_name])
+                self.parent_layout.addWidget(self.class_layouts_scrolls[event_name])
+
+        # for b in data:
+        #     self.name_classes.append(b['name'])
+        #     self.class_layouts_containers[b['name']] = QWidget()
+        #     self.class_layouts[b['name']] = QtWidgets.QVBoxLayout(self)
+        #     self.class_layouts_containers[b['name']].setLayout(self.class_layouts[b['name']])
+        #     self.class_layouts_scrolls[b['name']] = QtWidgets.QScrollArea()
+        #     self.class_layouts_scrolls[b['name']].setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        #     self.class_layouts_scrolls[b['name']].setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        #     self.class_layouts_scrolls[b['name']].setWidgetResizable(True)
+        #     self.class_layouts_scrolls[b['name']].setWidget(self.class_layouts_containers[b['name']])
+        #     self.parent_layout.addWidget(self.class_layouts_scrolls[b['name']])
 
         self.home_ui()
         self.note_buttons()
@@ -164,7 +182,7 @@ class UIPreviousWindow(QWidget):
                     if directory_array[-5] == "data" and directory_array[-4].isdigit() and directory_array[
                         -3].isdigit() and directory_array[-2].isdigit():
                         for x in self.name_classes:
-                            if directory_array[-1].strip()[:-4] == x:
+                            if directory_array[-1].strip()[:-11] == x: ## Change for timestamp
                                 self.other_buttons[self.directories[i]] = QPushButton(self.directories[i])
                                 self.other_buttons[self.directories[i]].setIcon(QIcon(QPixmap(self.directories[i].strip())))
                                 self.other_buttons[self.directories[i]].setIconSize(QSize(100, 100))
@@ -176,7 +194,7 @@ class UIPreviousWindow(QWidget):
                     self.all_button_layout.addWidget(self.buttons[self.directories[i]])
         for x in self.name_classes:
             no_notes_text = QtWidgets.QLabel()
-            no_notes_text.setText("No notes to display for this class")
+            no_notes_text.setText("No notes to display for this class/event")
             if self.class_layouts[x].count() == 1:
                 self.no_notes_display(x, no_notes_text)
         self.add_spacer()
