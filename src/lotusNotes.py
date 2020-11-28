@@ -19,6 +19,7 @@ from PyQt5.QtCore import Qt, pyqtSignal, QSize, QPoint, QRect
 from PyQt5.QtGui import QRegion, QColor, QPainter, QIcon, QPixmap
 from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QMessageBox, QScrollArea, QGridLayout, QHBoxLayout, \
     QVBoxLayout, QSizePolicy, QAction
+from math import floor
 
 from src.constants import CONFIG_FILE, DIRECTORY_FILE, SCHEDULE_FILE_PATH, SCHEDULED_NOTES_DIRECTORY, assets
 from src.lotusButtons import ToolButton
@@ -455,10 +456,6 @@ class CanvasWindow(QScrollArea):
         self.layout.setAlignment(Qt.AlignTop)
         self.layout.addWidget(self.label, Qt.AlignTop | Qt.AlignLeft)
 
-        # self.header_text = QtWidgets.QLineEdit()
-        # self.header_text.setGeometry(0, 0, 160, 80) # make sure sizing of label is good ahead of time
-        # self.header = FloatingWidget(self.header_text, self.label)
-
         self.setWidget(self.label)
         self.setLayout(self.layout)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -548,16 +545,15 @@ class UINoteWindow(QWidget):
 
         ########### Buttons ###########
         # Handled by resizeEvent
-        self.font = QtGui.QFont("Times New Roman", 20, QtGui.QFont.Bold)
-        self.heading_title = QtWidgets.QLineEdit()
+        self.heading_font = QtGui.QFont("Times New Roman", 10, QtGui.QFont.Bold)
         config = configparser.ConfigParser()
         config.read(CONFIG_FILE)
         name = config['DEFAULT']['name']
+        self.heading_title = QtWidgets.QLineEdit()
         self.heading_name = QtWidgets.QLineEdit(name)
-        self.course = QtWidgets.QLineEdit() #QtWidgets.QComboBox()
+        self.heading_course = QtWidgets.QLineEdit()
+        self.heading_date = QtWidgets.QLineEdit()
         self.add_date = True
-
-
 
         ########### Layout ############
         self.setMinimumSize(1200, 600)
@@ -566,32 +562,8 @@ class UINoteWindow(QWidget):
         self.layout = QVBoxLayout()
 
         self.header_text = QtWidgets.QPlainTextEdit()
-        self.header_text.setGeometry(0, 0, 160, 20)  # make sure sizing of label is good ahead of time
         self.header_widget = FloatingWidget(self.header_text, self.canvas_window)
         self.header_widget.hide()
-
-
-        #self.heading_title = QtWidgets.QLineEdit()
-        # title_font = QtGui.QFont("Times New Roman", 20)
-        # self.heading_title.setFont(title_font)
-        # self.heading_title.setStyleSheet("border: 0px")
-        # self.layout.addWidget(self.heading_title)
-
-        # subheading_font = QtGui.QFont("Times New Roman", 15)
-        # self.heading_name = QtWidgets.QLineEdit()
-        # self.heading_name.setFont(subheading_font)
-        # self.heading_name.setStyleSheet("border: 0px")
-        # self.layout.addWidget(self.heading_name)
-
-        self.heading_course = QtWidgets.QLineEdit()
-        # self.heading_course.setFont(subheading_font)
-        # self.heading_course.setStyleSheet("border: 0px")
-        # self.layout.addWidget(self.heading_course)
-
-        self.heading_date = QtWidgets.QLineEdit()
-        # self.heading_date.setFont(subheading_font)
-        # self.heading_date.setStyleSheet("border: 0px")
-        # self.layout.addWidget(self.heading_date)
 
         self.layout.setContentsMargins(0,0,0,0)
         self.layout.setSpacing(0)
@@ -878,20 +850,17 @@ class UINoteWindow(QWidget):
         layout.addRow(self.tr("&Title:"), self.heading_title)
         layout.addRow(self.tr("&Name:"), self.heading_name)
         time_checkbox = QtWidgets.QCheckBox("Add Date", self)
-        time_checkbox.setChecked(self.add_date)
+        time_checkbox.setChecked(self.add_date) # Checked on by default
         dropdown = QtWidgets.QComboBox(self)
         for classes in name_classes:
             dropdown.addItem(classes)
         dropdown.addItem("---")
-        dropdown.setCurrentText(self.course.text())
+        dropdown.setCurrentText(self.heading_course.text())
         layout.addWidget(time_checkbox)
         layout.addRow(dropdown)
-        # self.title = title_edit
-        # self.name = name_edit
-
         add_button = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel)
         add_button.accepted.connect(
-            lambda: self.accept_header( dropdown, time_checkbox, header_dialog))
+            lambda: self.accept_header(dropdown, time_checkbox, header_dialog))
         add_button.rejected.connect(header_dialog.close)
         add_button.setOrientation(Qt.Horizontal)
         layout.addWidget(add_button)
@@ -907,14 +876,39 @@ class UINoteWindow(QWidget):
             error.setText("Please fill out at least one entry.")
             error.exec_()
             return
-
+        # Update class selected and date bool
+        self.heading_course.setText(course.currentText())
+        self.add_date = time_checkbox.isChecked()
+        # Get current date
         today = date.today()
-        # time = datetime.now()
         date_str = today.strftime("%B %d, %Y")
-        # time_str = time.strftime("%H:%M:%S")
-        composed_heading = self.heading_title.text() + "\n" + self.heading_name.text() + "\n" + course.currentText() + "\n" + date_str
+        #hello there how are you doing 5.5*len
+        height = 1
+        max_len = 3
+        composed_heading = ""
+        if len(self.heading_title.text()) != 0:
+            composed_heading = composed_heading + self.heading_title.text()
+            if len(self.heading_title.text()) > max_len:
+                max_len = len(self.heading_title.text())
+            height = height + 1
+        if len(self.heading_name.text()) != 0:
+            composed_heading = composed_heading + "\n" + self.heading_name.text()
+            if len(self.heading_name.text()) > max_len:
+                max_len = len(self.heading_title.text())
+            height = height + 1
+        if course.currentText() != "---":
+            composed_heading = composed_heading + "\n" + course.currentText()
+        if time_checkbox.isChecked():
+            composed_heading = composed_heading + "\n" + date_str
+            if len(date_str) > max_len:
+                max_len = len(date_str)
+            height = height + 1
+        # composed_heading = self.heading_title.text() + "\n" + self.heading_name.text() + "\n" + course.currentText() + "\n" + date_str
         self.header_text.document().setPlainText(composed_heading)
-        self.header_text.setGeometry(0, 0, 160, 80)  # make sure sizing of label is good ahead of time
+        # self.header_text.setFont(self.heading_font)
+        xlen = max_len*self.heading_font.pointSize()
+        ylen = floor(height*self.heading_font.pointSize()*1.5)
+        self.header_text.setGeometry(0, 0, xlen, ylen)  # Dynamic sizing
         self.header_widget = FloatingWidget(self.header_text, self.canvas_window)
         self.header_widget.show()
         dialog.close()
@@ -925,11 +919,11 @@ class UINoteWindow(QWidget):
         arial_font = QtGui.QFont("Times New Roman", 20, QtGui.QFont.Bold)
         font, ok = QtWidgets.QFontDialog.getFont(arial_font)
         if ok:
-            self.font = font
+            self.heading_font = font
         dialog = QtWidgets.QDialog()
         time_checkbox = QtWidgets.QCheckBox("", self)
         time_checkbox.setChecked(self.add_date)
-        self.accept_header( self.course, time_checkbox, dialog)
+        self.accept_header( self.heading_course, time_checkbox, dialog)
 
     def open(self, file_path:str=None):
         if self.canvas_window.label.hasChanged():
