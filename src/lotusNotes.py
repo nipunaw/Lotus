@@ -893,7 +893,7 @@ class UINoteWindow(QWidget):
         if len(self.heading_name.text()) != 0:
             composed_heading = composed_heading + self.heading_name.text() + "\n"
             if len(self.heading_name.text()) > max_len:
-                max_len = len(self.heading_title.text())
+                max_len = len(self.heading_name.text())
             height = height + 1
         composed_heading = composed_heading + course + "\n"
         if len(course) > max_len:
@@ -903,6 +903,7 @@ class UINoteWindow(QWidget):
             if len(date_str) > max_len:
                 max_len = len(date_str)
             height = height + 1
+        composed_heading = composed_heading.rstrip("\n")
         self.header_text.document().setPlainText(composed_heading)
         self.header_text.setFont(self.heading_font)
         xlen = max_len*self.heading_font.pointSize()
