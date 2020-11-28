@@ -12,6 +12,16 @@ from src.lotusUtils import clear_layout
 
 DAYS = ["M", "T", "W", "R", "F", "Sa", "Su"]
 
+
+def to_qdate(date_object:dict):
+    return QDate(date_object["year"], date_object["month"], date_object["day"])
+
+def to_qtime(date_object:dict):
+    return QTime(date_object["hour"], date_object["minute"])
+
+def to_qcolor(data_object:dict):
+    return QColor(data_object["r"], data_object["g"], data_object["b"])
+
 class Schedule(QObject):
     updated = pyqtSignal()
     connect_buttons = pyqtSignal(list)
@@ -45,41 +55,53 @@ class Schedule(QObject):
                 self._schedule = json.load(schedule_file)
             schedule_file.close()
 
-    def get_class_start_end_dates(self, class_name:str):
-        return (QDate(self._schedule[class_name]["start"]["year"],
-                      self._schedule[class_name]["start"]["month"],
-                      self._schedule[class_name]["start"]["day"]),
-                QDate(self._schedule[class_name]["end"]["year"],
-                      self._schedule[class_name]["end"]["month"],
-                      self._schedule[class_name]["end"]["day"]))
+    def get_recurring_event_start_end_dates(self, event_data:dict):
+        return to_qdate(event_data["start"]), to_qdate(event_data["end"])
 
-    def is_class_date(self, class_name:str, date:QDate):
-        start_date, end_date = self.get_class_start_end_dates(class_name)
+    def is_recurring_event_date(self, event_data:dict, date:QDate):
+        event_type = event_data["type"]
+        start_date, end_date = self.get_recurring_event_start_end_dates(event_data)
         if start_date <= date <= end_date:
-            for b in self._schedule[class_name]["blocks"]:
-                if b["day"] == DAYS[date.dayOfWeek() - 1]:
+            day_of_week = DAYS[date.dayOfWeek() - 1]
+            if event_type == "class":
+                for b in event_data["blocks"]:
+                    if b["day"] == day_of_week:
+                        return True
+            elif event_type == "recurring event":
+                if event_data["day"] == day_of_week:
                     return True
         return False
 
-    def get_class_stylesheet(self, class_name:str):
-        return "background-color: rgb({},{},{})".format(self._schedule[class_name]["color"]["r"],
-                                                        self._schedule[class_name]["color"]["g"],
-                                                        self._schedule[class_name]["color"]["b"])
+    def get_event_stylesheet(self, event_name:str):
+        return "background-color: rgb({},{},{})".format(self._schedule[event_name]["color"]["r"],
+                                                        self._schedule[event_name]["color"]["g"],
+                                                        self._schedule[event_name]["color"]["b"])
+
+    def get_event_button(self, event_name:str, time:QTime, include_time=True):
+        time_string = time.toString("HH:mm AP")
+        button_title = "{}{}".format(event_name, " " + time_string if include_time else "")
+        button = QPushButton(button_title)
+        button.setStyleSheet(self.get_event_stylesheet(event_name))
+        return button
 
     def get_event_buttons(self, date:QDate, include_times=True):
         buttons = []
-        for class_name, data in self._schedule.items():
-            start_date, end_date = self.get_class_start_end_dates(class_name)
-            if start_date <= date <= end_date:
-                for b in data["blocks"]:
-                    if b["day"] == DAYS[date.dayOfWeek()-1]:
-                        # Class on this day
-                        time = QTime(b["time"]["hour"], b["time"]["minute"])
-                        time_string = time.toString("HH:mm AP")
-                        button_title = "{}{}".format(class_name, " " + time_string if include_times else "")
-                        button = QPushButton(button_title)
-                        button.setStyleSheet(self.get_class_stylesheet(class_name))
-                        buttons.append((button, class_name, date, time))
+        for event_name, data in self._schedule.items():
+            if data["type"] == "class":
+                start_date, end_date = self.get_recurring_event_start_end_dates(data)
+                if start_date <= date <= end_date:
+                    for b in data["blocks"]:
+                        if b["day"] == DAYS[date.dayOfWeek()-1]:
+                            # Class on this day
+                            time = to_qtime(b["time"])
+                            button = self.get_event_button(event_name, time, include_times)
+                            buttons.append((button, event_name, date, time))
+            else:
+                pass
+                # if to_qdate(data["date"]) == date:
+                #     time = to_qtime(data["time"])
+                #     button = self.get_event_button(event_name, time, include_times)
+                #     buttons.append((button, event_name, date, time))
         self.connect_buttons.emit(buttons)
         return buttons
 
@@ -99,6 +121,7 @@ class Schedule(QObject):
         self._schedule[event_name] = data
         self.schedule = self._schedule
         return True
+
 
 class UICalendarWindow(QWidget):
     def __init__(self, schedule:Schedule, parent=None):
@@ -151,10 +174,13 @@ class ScheduleTable(QWidget):
             header_label = QLabel(headers[i])
             header_label.setAlignment(Qt.AlignLeft)
             self.grid_layout.addWidget(header_label, 0, i)
+        # Add Classes to Table
         for i, (class_name, data) in enumerate(self.schedule.schedule.items()):
+            if data["type"] != "class":
+                continue
             # Add name to table
             button = QPushButton(class_name)
-            button.setStyleSheet(self.schedule.get_class_stylesheet(class_name))
+            button.setStyleSheet(self.schedule.get_event_stylesheet(class_name))
             button.clicked.connect(lambda state, x=data: self.edit_class(x))
             self.grid_layout.addWidget(button, i + 1, 0)
             # Add Blocks
@@ -200,25 +226,49 @@ class ScheduleCalendar(QCalendarWidget):
 
     def paintCell(self, painter, rect, date):
         blocks = []
-        for class_name, data in self.schedule.schedule.items():
-            if self.schedule.is_class_date(class_name, date):
-                for b in data["blocks"]:
-                    if b["day"] == DAYS[date.dayOfWeek()-1]:
-                        blocks.append((data["color"], b))
-        blocks.sort(key = lambda x: x[1]["time"]["hour"])
-        for color, b in blocks:
-            painter.setBrush(QColor(color["r"], color["g"], color["b"]))
-            atop = rect.top() + ((blocks.index((color, b)) / len(blocks)) * (rect.height()))
+        for event_name, data in self.schedule.schedule.items():
+            event_type = data["type"]
+            if event_type in ["class", "recurring event"]:
+                if self.schedule.is_recurring_event_date(data, date):
+                    event_blocks = []
+                    if event_type == "class":
+                        event_blocks = data["blocks"]
+                    else:
+                        event_blocks.append({
+                            "day": data["day"],
+                            "time": data["time"]
+                        })
+                    for b in event_blocks:
+                        if b["day"] == DAYS[date.dayOfWeek() - 1]:
+                            blocks.append({
+                                "type": "class",
+                                "color": data["color"],
+                                "time": b["time"]
+                            })
+            else:
+                event_date = to_qdate(data["date"])
+                if date == event_date:
+                    blocks.append({
+                        "type": "event",
+                        "color": data["color"],
+                        "time": data["time"]
+                    })
+        blocks.sort(key = lambda x: x["time"]["hour"])
+        for block in blocks:
+            color = block["color"]
+            painter.setBrush(to_qcolor(color))
+            atop = rect.top() + ((blocks.index(block) / len(blocks)) * (rect.height()))
             height = rect.height() / len(blocks)
             block_rect = QRectF(rect.left(), atop, rect.width(), height)
             painter.setPen(Qt.NoPen)
             painter.drawRect(block_rect)
         painter.setPen(QPen())
+        # noinspection PyCallingNonCallable
         painter.drawText(QRect(rect), Qt.TextSingleLine|Qt.AlignCenter, str(date.day()))
 
     def open_day_viewer(self, date:QDate):
-        for class_name, data in self.schedule.schedule.items():
-            if self.schedule.is_class_date(class_name, date):
+        for event_name, data in self.schedule.schedule.items():
+            if self.schedule.is_recurring_event_date(event_name, date):
                 self.day_viewer = DayViewer(date, self.schedule, parent=self)
                 self.day_viewer.back.connect(lambda: self.stack.removeWidget(self.day_viewer))
                 self.stack.addWidget(self.day_viewer)
@@ -357,17 +407,17 @@ class Popup(QDialog):
         self.form_layout.addRow("Color Code:", self.color_button)
 
         # Initialize widgets to be added later
-        start_date_model = DateTimePickerSeriesModel(self)
-        self.class_start_date = DateTimePickerSeries(start_date_model, "MMM d yyyy")
-        self.event_start_date = DateTimePickerSeries(start_date_model, "MMM d yyyy")
+        self.start_date_model = DateTimePickerSeriesModel(self)
+        self.class_start_date = DateTimePickerSeries(self.start_date_model, "MMM d yyyy")
+        self.event_start_date = DateTimePickerSeries(self.start_date_model, "MMM d yyyy")
 
-        end_date_model = DateTimePickerSeriesModel(self)
-        self.class_end_date = DateTimePickerSeries(end_date_model, "MMM d yyyy")
-        self.event_end_date = DateTimePickerSeries(end_date_model, "MMM d yyyy")
+        self.end_date_model = DateTimePickerSeriesModel(self)
+        self.class_end_date = DateTimePickerSeries(self.end_date_model, "MMM d yyyy")
+        self.event_end_date = DateTimePickerSeries(self.end_date_model, "MMM d yyyy")
 
-        event_date_model = DateTimePickerSeriesModel(self)
-        self.class_event_date = DateTimePickerSeries(event_date_model, "MMM d yyyy")
-        self.event_date = DateTimePickerSeries(event_date_model, "MMM d yyyy")
+        self.event_date_model = DateTimePickerSeriesModel(self)
+        self.class_event_date = DateTimePickerSeries(self.event_date_model, "MMM d yyyy hh:mm:AP")
+        self.event_date = DateTimePickerSeries(self.event_date_model, "MMM d yyyy hh:mm:AP")
 
         # Blocks
         self.blocks = 1
@@ -391,7 +441,7 @@ class Popup(QDialog):
         self.stack.setContentsMargins(0, 0, 0, 0)
 
         class_layout = QFormLayout()
-        class_layout.setContentsMargins(0, 0, 0, 0)
+        class_layout.setContentsMargins(0, 0, 0, class_layout.verticalSpacing())
         class_layout.addRow("Start Date:", self.class_start_date)
         class_layout.addRow("End Date:", self.class_end_date)
         class_layout.addRow("Weekly Blocks:", self.spin_box)
@@ -401,22 +451,24 @@ class Popup(QDialog):
         self.class_options.setLayout(class_layout)
 
         recurring_event_layout = QFormLayout()
-        recurring_event_layout.setContentsMargins(0, 0, 0, 0)
+        recurring_event_layout.setContentsMargins(0, 0, 0, recurring_event_layout.verticalSpacing())
         recurring_event_layout.addRow("Start Date:", self.event_start_date)
         recurring_event_layout.addRow("End Date:", self.event_end_date)
+        self.recurring_event_time_picker = ClassTimePicker()
+        recurring_event_layout.addRow("Event Time:", self.recurring_event_time_picker)
         self.recurring_event_options = QWidget()
         self.recurring_event_options.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.recurring_event_options.setLayout(recurring_event_layout)
 
         one_time_event_layout = QFormLayout()
-        one_time_event_layout.setContentsMargins(0, 0, 0, 0)
+        one_time_event_layout.setContentsMargins(0, 0, 0, one_time_event_layout.verticalSpacing())
         one_time_event_layout.addRow("Event Date:", self.event_date)
         self.one_time_event_options = QWidget()
         self.one_time_event_options.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.one_time_event_options.setLayout(one_time_event_layout)
 
         class_event_layout = QFormLayout()
-        class_event_layout.setContentsMargins(0, 0, 0, 0)
+        class_event_layout.setContentsMargins(0, 0, 0, class_event_layout.verticalSpacing())
         class_event_layout.addRow("Class:", self.class_picker)
         class_event_layout.addRow("Event Date:", self.class_event_date)
         self.class_event_options = QWidget()
@@ -438,9 +490,9 @@ class Popup(QDialog):
         #Update Values if self.data is defined
         if self.data is not None:
             self.name_edit.setText(self.data["name"])
-            self.start_date.setDate(QDate(self.data["start"]["year"], self.data["start"]["month"], self.data["start"]["day"]))
-            self.end_date.setDate(QDate(self.data["end"]["year"], self.data["end"]["month"], self.data["end"]["day"]))
-            self.color_picker.setCurrentColor(QColor(self.data["color"]["r"], self.data["color"]["g"], self.data["color"]["b"]))
+            self.start_date.setDate(to_qdate(self.data["start"]))
+            self.end_date.setDate(to_qdate(self.data["end"]))
+            self.color_picker.setCurrentColor(to_qcolor(self.data["color"]))
             self.spin_box.setValue(len(self.data["blocks"]))
             for i in range(0, len(self.data["blocks"])):
                 w : ClassTimePicker = self.layout.itemAt(self.rows_before_blocks + i, QFormLayout.FieldRole).widget()
@@ -554,52 +606,151 @@ class Popup(QDialog):
         return self.name_edit.text()
 
     def get_data(self):
-        block_data = []
-        for row in range(self.rows_before_blocks, self.layout.rowCount() - 1):
-            block_widget : ClassTimePicker = self.layout.itemAt(row, QFormLayout.FieldRole).widget()
-            time = block_widget.get_time()
-            block_data.append({
-                "day": block_widget.day_picker.get_day(),
-                "time": {
-                    "hour": time.hour(),
-                    "minute": time.minute()
-                }
-            })
+        event_type = self.event_type.text()
         data = {
+            "type": event_type.lower(),
             "name": self.get_name(),
-            "blocks": block_data,
-            "start": {
-                "day": self.start_date.date().day(),
-                "month": self.start_date.date().month(),
-                "year": self.start_date.date().year()
-            },
-            "end": {
-                "day": self.end_date.date().day(),
-                "month": self.end_date.date().month(),
-                "year": self.end_date.date().year()
-            },
             "color": {
                 "r": self.color_picker.currentColor().red(),
                 "g": self.color_picker.currentColor().green(),
                 "b": self.color_picker.currentColor().blue(),
             }
         }
+        if event_type == "Class":
+            block_data = []
+            # noinspection PyTypeChecker
+            class_layout:QFormLayout = self.stack.currentWidget().layout()
+            for row in range(self.rows_before_blocks, class_layout.rowCount()):
+                # noinspection PyTypeChecker
+                block_widget:ClassTimePicker = class_layout.itemAt(row, QFormLayout.FieldRole).widget()
+                if block_widget.isHidden():
+                    continue
+                time = block_widget.get_time()
+                block_data.append({
+                    "day": block_widget.day_picker.get_day(),
+                    "time": {
+                        "hour": time.hour(),
+                        "minute": time.minute()
+                    }
+                })
+            data["blocks"] = block_data
+        if event_type in ["Class", "Recurring Event"]:
+            start_date = self.start_date_model.content.date()
+            data["start"] = {
+                "day": start_date.day(),
+                "month": start_date.month(),
+                "year": start_date.year()
+            }
+            end_date = self.end_date_model.content.date()
+            data["end"] = {
+                "day": end_date.day(),
+                "month": end_date.month(),
+                "year": end_date.year()
+            }
+        if event_type == "Recurring Event":
+            data["day"] = self.recurring_event_time_picker.day_picker.get_day()
+            time = self.recurring_event_time_picker.get_time()
+            data["time"] = {
+                "hour": time.hour(),
+                "minute": time.minute()
+            }
+        if event_type == "One Time Class Event":
+            data["class_name"] = self.class_picker.text()
+        if event_type in ["One Time Event", "One Time Class Event"]:
+            date_time = self.event_date_model.content
+            date = date_time.date()
+            time = date_time.time()
+            data["date"] = {
+                "day": date.day(),
+                "month": date.month(),
+                "year": date.year(),
+            }
+            data["time"] = {
+                "hour": time.hour(),
+                "minute": time.minute()
+            }
         return data
 
     def accept(self):
-        # TODO: Allow for saving of edits
+        event_type = self.event_type.text()
+        if event_type == "":
+            error = QMessageBox()
+            error.setText("Please select a type for the event.")
+            error.exec_()
+            self.event_type.setFocus()
+            return
+        # Check Name
+        if len(self.get_name()) == 0:
+            error = QMessageBox()
+            error.setText("Please enter a name for the event.")
+            error.exec_()
+            self.name_edit.setFocus()
+            return
+        if event_type in ["Class", "Recurring Event"]:
+            # Check Start/End Date
+            start_date = self.start_date_model.content.date()
+            end_date = self.end_date_model.content.date()
+            if start_date >= end_date:
+                error = QMessageBox()
+                error.setText("End date cannot {} start date.".format("be equal to" if start_date == end_date else "come before"))
+                error.exec_()
+                if event_type == "Class":
+                    self.class_end_date.setFocus()
+                else:
+                    self.event_end_date.setFocus()
+                return
+            if event_type == "Class":
+                # Check Blocks
+                # noinspection PyTypeChecker
+                class_layout:QFormLayout = self.stack.currentWidget().layout()
+                print(class_layout)
+                for row in range(self.rows_before_blocks, class_layout.rowCount()):
+                    block_widget = class_layout.itemAt(row, QFormLayout.FieldRole).widget()
+                    if block_widget.isHidden():
+                        continue
+                    # Make sure a day is selected for each block
+                    if not block_widget.is_valid():
+                        block_name = "the class block" if self.blocks == 1 else str.lower(
+                            class_layout.itemAt(row, QFormLayout.LabelRole).widget().text()).replace(" time:", "")
+                        error = QMessageBox()
+                        error.setText("Please select a valid day for {}.".format(block_name))
+                        error.exec_()
+                        return
+                    # Check for duplicate blocks
+                    for other in range(self.rows_before_blocks, class_layout.rowCount() - 1):
+                        if row == other:
+                            continue
+                        other_block_widget = class_layout.itemAt(other, QFormLayout.FieldRole).widget()
+                        same_time = block_widget.get_time() == other_block_widget.get_time()
+                        same_day = block_widget.day_picker.get_day() == other_block_widget.day_picker.get_day()
+                        if same_time and same_day:
+                            error = QMessageBox()
+                            error.setText("Block {} and {} cannot have the same day and time.".format(
+                                row - self.rows_before_blocks+1, other - self.rows_before_blocks+1))
+                            error.exec_()
+                            return
+            if event_type == "Recurring Event":
+                # Make sure a day is selected
+                if not self.recurring_event_time_picker.is_valid():
+                    error = QMessageBox()
+                    error.setText("Please select a valid day for this event.")
+                    error.exec_()
+                    self.recurring_event_time_picker.setFocus()
+                    return
+        if event_type == "One Time Class Event":
+            # Check Class
+            if len(self.class_picker.text()) == 0:
+                error = QMessageBox()
+                error.setText("Please select a class for this event.")
+                error.exec_()
+                self.class_picker.setFocus()
+                return
         if self.data is not None:
             error = QMessageBox()
             error.setText("Changes will not be saved because this feature is incomplete.")
             error.exec_()
             super(Popup, self).reject()
         # Valid name
-        if len(self.get_name()) == 0:
-            error = QMessageBox()
-            error.setText("Please enter a class name.")
-            error.exec_()
-            self.name_edit.setFocus()
-            return
         elif self.get_name() in self.schedule.schedule.keys():
             error = QMessageBox()
             error.setText("An event with this name already exists, would you like to overwrite it?")
@@ -610,35 +761,6 @@ class Popup(QDialog):
                 self.reject()
             elif result == error.Cancel:
                 self.name_edit.setFocus()
-        elif self.start_date.date() >= self.end_date.date():
-            error = QMessageBox()
-            error.setText("End date cannot {} start date.".format("be equal to" if self.start_date.date() == self.end_date.date() else "come before"))
-            error.exec_()
-            self.end_date.setFocus()
-            return
-        else:
-            # Valid block times
-            for row in range(self.rows_before_blocks, self.layout.rowCount() - 1):
-                block_widget = self.layout.itemAt(row, QFormLayout.FieldRole).widget()
-                #Make sure a day is selected
-                if not block_widget.is_valid():
-                    block_name = "the class block" if self.blocks == 1 else str.lower(self.layout.itemAt(row, QFormLayout.LabelRole).widget().text()).replace(" time:", "")
-                    error = QMessageBox()
-                    error.setText("Please select a valid day for {}.".format(block_name))
-                    error.exec_()
-                    return
-                # Check for duplicate blocks
-                for other in range(self.rows_before_blocks, self.layout.rowCount() - 1):
-                    if row == other:
-                        continue
-                    other_block_widget = self.layout.itemAt(other, QFormLayout.FieldRole).widget()
-                    same_time = block_widget.get_time() == other_block_widget.get_time()
-                    same_day = block_widget.day_picker.get_day() == other_block_widget.day_picker.get_day()
-                    if same_time and same_day:
-                        error = QMessageBox()
-                        error.setText("Block {} and {} cannot have the same day and time.".format(row - self.rows_before_blocks + 1, other - self.rows_before_blocks + 1))
-                        error.exec_()
-                        return
         super(Popup, self).accept()
 
     def reject(self):
