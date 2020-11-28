@@ -886,27 +886,27 @@ class UINoteWindow(QWidget):
         max_len = 3
         composed_heading = ""
         if len(self.heading_title.text()) != 0:
-            composed_heading = self.heading_title.text() + "\n"
+            composed_heading = "Title: " + self.heading_title.text() + "\n"
             if len(self.heading_title.text()) > max_len:
                 max_len = len(self.heading_title.text())
             height = height + 1
         if len(self.heading_name.text()) != 0:
-            composed_heading = composed_heading + self.heading_name.text() + "\n"
+            composed_heading = composed_heading + "Name: " + self.heading_name.text() + "\n"
             if len(self.heading_name.text()) > max_len:
                 max_len = len(self.heading_name.text())
             height = height + 1
-        composed_heading = composed_heading + course + "\n"
+        composed_heading = composed_heading + "Class: " + course + "\n"
         if len(course) > max_len:
             max_len = len(course)
         if time_checkbox.isChecked():
-            composed_heading = composed_heading + date_str
+            composed_heading = composed_heading + "Date: " + date_str
             if len(date_str) > max_len:
                 max_len = len(date_str)
             height = height + 1
         composed_heading = composed_heading.rstrip("\n")
         self.header_text.document().setPlainText(composed_heading)
         self.header_text.setFont(self.heading_font)
-        xlen = max_len*self.heading_font.pointSize()
+        xlen = (max_len+4)*self.heading_font.pointSize()
         ylen = height*self.heading_font.pointSize()*2
         self.header_text.setGeometry(0, 0, xlen, ylen)  # Dynamic sizing
         self.header_widget.deleteLater()
