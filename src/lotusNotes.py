@@ -140,16 +140,16 @@ class Canvas(QLabel):
         self.drawing_path_layers = []
         #self.drawing_path = QtGui.QPainterPath()
 
-        self.tableWidget = QLabel("Hello")
-        self.tableWidget.setGeometry(0, 0, 200, 200)
-        self.test_2 = FloatingWidget(self.tableWidget, self, 20, 20)
-        self.floatingWidgets.append(self.test_2)
-
-        self.helloWidget = QtWidgets.QLineEdit()
-        self.helloWidget.setGeometry(0, 0, 200, 100)
-        self.test_3 = FloatingWidget(self.helloWidget, self, 10, 10)
-        self.test_3.setGeometry(10, 10, 300, 200)
-        self.floatingWidgets.append(self.test_3)
+        # self.tableWidget = QLabel("Hello")
+        # self.tableWidget.setGeometry(0, 0, 200, 200)
+        # self.test_2 = FloatingWidget(self.tableWidget, self, 20, 20)
+        # self.floatingWidgets.append(self.test_2)
+        #
+        # self.helloWidget = QtWidgets.QLineEdit()
+        # self.helloWidget.setGeometry(0, 0, 200, 100)
+        # self.test_3 = FloatingWidget(self.helloWidget, self, 10, 10)
+        # self.test_3.setGeometry(10, 10, 300, 200)
+        # self.floatingWidgets.append(self.test_3)
 
         # Painters
         self.painter = QPainter()
@@ -562,6 +562,11 @@ class UINoteWindow(QWidget):
         self.heading_option.triggered.connect(self.heading)
         self.template_menu = self.menu_bar.addMenu("Template")
         self.template_menu.addAction(self.heading_option)
+
+        self.table_option = QtWidgets.QAction("Add Table", self)
+        self.table_option.setShortcut("Ctrl+T") # Might not need
+        self.table_option.triggered.connect(self.insert_table)
+        self.template_menu.addAction(self.table_option)
 
         self.settings_option = QtWidgets.QAction("Font")
         self.settings_option.triggered.connect(self.settings)
@@ -983,6 +988,48 @@ class UINoteWindow(QWidget):
         self.header_widget.deleteLater()
         self.header_widget = FloatingWidget(self.header_text, self.canvas_window)
         self.header_widget.show()
+        dialog.close()
+        self.update()
+        return
+
+    def insert_table(self):
+        table_dialog = QtWidgets.QDialog(self)
+        table_dialog.setWindowTitle("Insert a table")
+        layout = QtWidgets.QFormLayout()
+        rows = QtWidgets.QLineEdit()
+        columns = QtWidgets.QLineEdit()
+        validator = QtGui.QIntValidator()
+        rows.setValidator(validator)
+        columns.setValidator(validator)
+        layout.addRow(self.tr("&Rows:"), rows)
+        layout.addRow(self.tr("&Columns:"), columns)
+        add_button = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel)
+        add_button.accepted.connect(
+            lambda: self.accept_table(rows.text(), columns.text(), table_dialog))
+        add_button.rejected.connect(table_dialog.close)
+        add_button.setOrientation(Qt.Horizontal)
+        layout.addWidget(add_button)
+        table_dialog.setLayout(layout)
+        table_dialog.update()
+        table_dialog.show()
+        self.update()
+
+    def accept_table(self, rows, columns, dialog):
+        if len(rows) == 0 and len(columns) == 0:
+            #prompt to add at least one field
+            error = QtWidgets.QMessageBox()
+            error.setText("Please fill both entries.")
+            error.exec_()
+            return
+        table = QtWidgets.QTableWidget(int(rows),int(columns))
+        table.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        table.setFixedSize(table.horizontalHeader().length() + table.verticalHeader().width(),
+                                        table.verticalHeader().length() + table.horizontalHeader().height())
+        table_widget = FloatingWidget(table, self.canvas_window, 10, 10)
+        self.canvas_window.label.floatingWidgets.append(table_widget)
+        table_widget.show()
         dialog.close()
         self.update()
         return
