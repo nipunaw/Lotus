@@ -114,6 +114,7 @@ class Canvas(QLabel):
         self.activeLayers = []
         self.activeLayers.append(master_canvas_layer)
         self.inactiveLayers = []
+        self.floatingWidgets = []
         #self.canvasLayers = [master_canvas_layer] # Deprecated
         #self.activeLayers = [True] # Deprecated
         # self.numLayers = 1 # Deprecated
@@ -138,6 +139,18 @@ class Canvas(QLabel):
         # Drawing path
         self.drawing_path_layers = []
         #self.drawing_path = QtGui.QPainterPath()
+
+        self.tableWidget = QLabel("Hello")
+        self.tableWidget.setGeometry(0, 0, 200, 200)
+        self.test_2 = FloatingWidget(self.tableWidget, self, 20, 20)
+        self.floatingWidgets.append(self.test_2)
+
+        self.helloWidget = QtWidgets.QLineEdit()
+        self.helloWidget.setGeometry(0, 0, 200, 100)
+        self.test_3 = FloatingWidget(self.helloWidget, self, 10, 10)
+        self.test_3.setGeometry(10, 10, 300, 200)
+        self.floatingWidgets.append(self.test_3)
+
         # Painters
         self.painter = QPainter()
         self.layer_painter = QPainter()
@@ -198,9 +211,9 @@ class Canvas(QLabel):
 
             self.painter.begin(new_canvas_layer)
             self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+            self.painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
             self.painter.setPen(self.current_utensil.pen())
-            #self.painter.drawPoint(event.pos())
-
+            self.painter.drawPoint(event.pos())
 
             self.activeLayers.append(new_canvas_layer)
             self.inactiveLayers.clear()
@@ -385,7 +398,23 @@ class Canvas(QLabel):
             return False
         return not self.pixmap().toImage() == self.last_save
 
+    def floatingWidgetPlace(self, widget):
+        new_floating_canvas_layer = QtGui.QPixmap(self.size())
+        new_floating_canvas_layer.fill(Qt.transparent)
+        self.painter.begin(new_floating_canvas_layer)
+        self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+        self.painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
+        self.painter.drawPixmap(widget.geometry().x(), widget.geometry().y(), widget.grab())
+        self.activeLayers.append(new_floating_canvas_layer)
+        self.painter.end()
+        self.update()
+        widget.deleteLater()
+        self.floatingWidgets.remove(widget)
+        self.layer_change.emit()
+
     def save(self, file_path):
+        # for i in self.floatingWidgets: ## TODO: Save un-placed floating widgets
+        #     self.floatingWidgetPlace(i)
         self.activeLayers[0].save(file_path)
         self.last_save = self.activeLayers[0].toImage()
 
@@ -469,13 +498,13 @@ class CanvasWindow(QScrollArea):
         self.layout.setAlignment(Qt.AlignTop)
         self.layout.addWidget(self.label, Qt.AlignTop | Qt.AlignLeft)
 
-        self.test_text = QLabel("Hello, how are you doing")
-        self.test_text.setGeometry(0, 0, 160, 20) # make sure sizing of label is good ahead of time
-        self.test = FloatingWidget(self.test_text, self.label)
+        # self.test_text = QLabel("Hello, how are you doing")
+        # self.test_text.setGeometry(0, 0, 160, 20) # make sure sizing of label is good ahead of time
+        # self.test = FloatingWidget(self.test_text, self.label)
 
         # self.tableWidget = QtWidgets.QLineEdit()
         # self.tableWidget.setGeometry(0, 0, 200, 200)
-        # self.test_2 = FloatingWidget(self.tableWidget, self.label)
+        # self.test_2 = FloatingWidget(self.tableWidget, self)
 
         self.setWidget(self.label)
         self.setLayout(self.layout)
@@ -582,27 +611,27 @@ class UINoteWindow(QWidget):
         self.layout = QVBoxLayout()
 
 
-        self.heading_title = QtWidgets.QLineEdit()
-        title_font = QtGui.QFont("Times New Roman", 20)
-        self.heading_title.setFont(title_font)
-        self.heading_title.setStyleSheet("border: 0px")
-        self.layout.addWidget(self.heading_title)
-
-        subheading_font = QtGui.QFont("Times New Roman", 15)
-        self.heading_name = QtWidgets.QLineEdit()
-        self.heading_name.setFont(subheading_font)
-        self.heading_name.setStyleSheet("border: 0px")
-        self.layout.addWidget(self.heading_name)
-
-        self.heading_course = QtWidgets.QLineEdit()
-        self.heading_course.setFont(subheading_font)
-        self.heading_course.setStyleSheet("border: 0px")
-        self.layout.addWidget(self.heading_course)
-
-        self.heading_date = QtWidgets.QLineEdit()
-        self.heading_date.setFont(subheading_font)
-        self.heading_date.setStyleSheet("border: 0px")
-        self.layout.addWidget(self.heading_date)
+        # self.heading_title = QtWidgets.QLineEdit()
+        # title_font = QtGui.QFont("Times New Roman", 20)
+        # self.heading_title.setFont(title_font)
+        # self.heading_title.setStyleSheet("border: 0px")
+        # self.layout.addWidget(self.heading_title)
+        #
+        # subheading_font = QtGui.QFont("Times New Roman", 15)
+        # self.heading_name = QtWidgets.QLineEdit()
+        # self.heading_name.setFont(subheading_font)
+        # self.heading_name.setStyleSheet("border: 0px")
+        # self.layout.addWidget(self.heading_name)
+        #
+        # self.heading_course = QtWidgets.QLineEdit()
+        # self.heading_course.setFont(subheading_font)
+        # self.heading_course.setStyleSheet("border: 0px")
+        # self.layout.addWidget(self.heading_course)
+        #
+        # self.heading_date = QtWidgets.QLineEdit()
+        # self.heading_date.setFont(subheading_font)
+        # self.heading_date.setStyleSheet("border: 0px")
+        # self.layout.addWidget(self.heading_date)
 
 
         self.layout.setContentsMargins(0,0,0,0)

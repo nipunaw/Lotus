@@ -11,23 +11,30 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 
 class FloatingWidget(QtWidgets.QWidget):
-    def __init__(self, child, parent):
+    def __init__(self, child, parent, x=0, y=0, resize_child = False):
         super().__init__(parent=parent)
+
 
         self.child_widget = child
         self.child_widget.setParent(self)
+
+        # self.child_widget.setFocusPolicy(QtCore.Qt.ClickFocus)
+        # self.child_widget.clearFocus()
+        # self.setFocusPolicy(QtCore.Qt.ClickFocus)
+        # self.setFocus()
 
         self.position_x = self.pos().x()
         self.position_y = self.pos().y()
         self.setMinimumWidth(self.child_widget.width()+6)
         self.setMinimumHeight(self.child_widget.height()+6)
-        self.setGeometry(50, 50, self.child_widget.width()+6, self.child_widget.height()+6)
+        self.setGeometry(x, y, self.child_widget.width()+6, self.child_widget.height()+6)
 
         self.setAttribute(QtCore.Qt.WA_StyledBackground, True)
         self.child_widget.move(3, 3)
         self.child_widget.setStyleSheet('border-width: 0px 0px 0px 0px;')
         self.setStyleSheet('background-color: white; border:1px solid black;')
 
+        self.resize_child = resize_child
         self.move_only = False
         self.left_side = False
         self.right_side = False
@@ -35,11 +42,13 @@ class FloatingWidget(QtWidgets.QWidget):
         self.bottom_side = False
 
 
-
         ## Right-click options
         self.menu = QtWidgets.QMenu(self)
+        placeAction = QtWidgets.QAction("Place", self)
         deleteAction = QtWidgets.QAction('Delete', self)
         deleteAction.triggered.connect(self.deleteLater)
+        placeAction.triggered.connect(lambda state, x = self : self.parent().floatingWidgetPlace(x))
+        self.menu.addAction(placeAction)
         self.menu.addAction(deleteAction)
 
         ## Cursor
@@ -139,7 +148,8 @@ class FloatingWidget(QtWidgets.QWidget):
         elif self.bottom_side: # bottom side
             resize_point_inverted = event.globalPos() - self.start_mouse_position + self.start_size
             self.resize(self.start_size.x(), resize_point_inverted.y())
-        self.child_widget.resize(self.width() - 6, self.height() - 6)
+        if self.resize_child:
+            self.child_widget.resize(self.width() - 6, self.height() - 6)
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
         self.move_only = False
