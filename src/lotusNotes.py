@@ -188,12 +188,14 @@ class Canvas(QLabel):
         temp = self.activeLayers[0]
         self.activeLayers[0] = QtGui.QPixmap(size)
         self.activeLayers[0].fill(Qt.white)
-        self.painter = QtGui.QPainter(self.activeLayers[0])
-        self.painter.drawPixmap(self.activeLayers[0].rect(), temp, temp.rect())
+        self.painter.begin(self.activeLayers[0])
+        self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+        self.painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
+        self.painter.drawPixmap(temp.rect(), temp, temp.rect())
         self.painter.end()
         self.setPixmap(self.activeLayers[0])
 
-        for i in range (0, len(self.activeLayers)):
+        for i in range (1, len(self.activeLayers)-1):
             self.resizeLayer(i, self.size())
 
         if self.last_save is None:
@@ -240,7 +242,7 @@ class Canvas(QLabel):
             if x < 200:
                 if y < 200:
                     self.resizeLayer(-1, QSize(self.width() + 100, self.height() + 100))
-                    self.resizeCanvas(QSize(self.width() + 100, self.height()))
+                    self.resizeCanvas(QSize(self.width() + 100, self.height() + 100))
                 else:
                     self.resizeLayer(-1, QSize(self.width() + 100, self.height()))
                     self.resizeCanvas(QSize(self.width() + 100, self.height()))
@@ -479,26 +481,10 @@ class Canvas(QLabel):
 
     def undo(self):
         if len(self.activeLayers) > 1:
-            #self.activeLayers[0] = self.activeLayers[0] or self.activeLayers[len(self.activeLayers) - 1]
-            #mask = self.activeLayers[len(self.activeLayers) - 1].createMaskFromColor()
-
-            # self.layer_painter.begin(self.activeLayers[0])
-            # self.layer_painter.setCompositionMode(QPainter.RasterOp_SourceXorDestination)
-            # self.layer_painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-            # self.layer_painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
-            # self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[len(self.activeLayers) - 1])
-            # #self.layer_painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
-            # self.layer_painter.end()
-            # self.setPixmap(self.activeLayers[0])
-
-            #self.update()
-            #self.activeLayers[0].begin(self.activeLayers[0])
-
             self.inactiveLayers.append(self.activeLayers.pop())
             self.change_master_layer()
             self.paintMirrorEvent()
             self.layer_change.emit()
-        #self.update()
 
     def redo(self): # Now finishing command pattern
         if len(self.inactiveLayers) > 0:
