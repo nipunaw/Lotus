@@ -139,7 +139,6 @@ class Canvas(QLabel):
         # Drawing path
         self.drawing_path_layers = []
         #self.drawing_path = QtGui.QPainterPath()
-
         # self.tableWidget = QLabel("Hello")
         # self.tableWidget.setGeometry(0, 0, 200, 200)
         # self.test_2 = FloatingWidget(self.tableWidget, self, 20, 20)
@@ -218,10 +217,11 @@ class Canvas(QLabel):
             self.activeLayers.append(new_canvas_layer)
             self.inactiveLayers.clear()
 
+            self.paintMirrorEvent()
             self.layer_change.emit()
 
             self.last_point_draw = event.pos()
-            self.update()
+            ##self.update()
             self.painter.end()
         elif event.button() == Qt.MiddleButton:
             self.setCursor(Qt.ClosedHandCursor)
@@ -251,7 +251,8 @@ class Canvas(QLabel):
             if not self.current_utensil == Utensils.HIGHLIGHTER:
                 self.painter.drawLine(self.last_point_draw, event.pos())
                 self.last_point_draw = event.pos()
-            self.update()
+            ##self.update()
+            self.paintMirrorEvent()
             self.painter.end()
         elif event.buttons() and Qt.MiddleButton and self.mouse_button_scrolling:
             offset = self.last_point_scroll - event.globalPos()
@@ -269,12 +270,14 @@ class Canvas(QLabel):
                 self.painter.setPen(self.current_utensil.pen())
                 self.painter.setBrush(self.current_utensil.highlighter())
                 self.painter.drawRect(self.last_point_draw.x(), self.last_point_draw.y(), (event.pos().x() -self.last_point_draw.x()), (event.pos().y() -self.last_point_draw.y()))
-                self.update()
+                ##self.update()
                 self.painter.end()
+            self.paintMirrorEvent()
+            self.layer_change.emit()
             self.utensil_press = False
 
         elif event.button() == Qt.MiddleButton:
-            self.setCursor(self.cursor)
+            self.cursor_update()
             self.mouse_button_scrolling = False
 
 
@@ -369,18 +372,29 @@ class Canvas(QLabel):
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         self.scrolled.emit(event)
 
-    def paintEvent(self, event):
-        #self.activeLayers[0].fill(Qt.white)
+    def paintMirrorEvent(self):
         self.layer_painter.begin(self.activeLayers[0])
         self.layer_painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
         self.layer_painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
-        #print(len(self.activeLayers))
-        self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[len(self.activeLayers)-1])
-        #for i in range(1, len(self.activeLayers)):
+        # print(len(self.activeLayers))
+        self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[len(self.activeLayers) - 1])
+        # for i in range(1, len(self.activeLayers)):
         #    self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[i])
         self.layer_painter.end()
         self.setPixmap(self.activeLayers[0])
-        super(Canvas, self).paintEvent(event)
+
+    # def paintEvent(self, event):
+    #     #self.activeLayers[0].fill(Qt.white)
+    #     self.layer_painter.begin(self.activeLayers[0])
+    #     self.layer_painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+    #     self.layer_painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
+    #     #print(len(self.activeLayers))
+    #     self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[len(self.activeLayers)-1])
+    #     #for i in range(1, len(self.activeLayers)):
+    #     #    self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[i])
+    #     self.layer_painter.end()
+    #     self.setPixmap(self.activeLayers[0])
+    #     super(Canvas, self).paintEvent(event)
 
     # def paintEvent(self, event):
     #     self.activeLayers[0].fill(Qt.white)
@@ -407,14 +421,15 @@ class Canvas(QLabel):
         self.painter.drawPixmap(widget.geometry().x(), widget.geometry().y(), widget.grab())
         self.activeLayers.append(new_floating_canvas_layer)
         self.painter.end()
-        self.update()
+        ##self.update()
+        self.paintMirrorEvent()
         widget.deleteLater()
         self.floatingWidgets.remove(widget)
         self.layer_change.emit()
 
     def save(self, file_path):
-        # for i in self.floatingWidgets: ## TODO: Save un-placed floating widgets
-        #     self.floatingWidgetPlace(i)
+        for i in self.floatingWidgets: ##TO-DO floating widgets
+             self.floatingWidgetPlace(i)
         self.activeLayers[0].save(file_path)
         self.last_save = self.activeLayers[0].toImage()
 
@@ -427,8 +442,10 @@ class Canvas(QLabel):
         clear_canvas_layer = QtGui.QPixmap(self.size())
         clear_canvas_layer.fill(Qt.white)
         self.activeLayers.append(clear_canvas_layer)
-        self.update()
+        self.inactiveLayers.clear()
+        self.paintMirrorEvent()
         self.resizeCanvas(self.startSize)
+        self.layer_change.emit()
         # Reset back to pen tool (done outside)
         # self.setUtensil(Utensils.PEN)
 
@@ -462,13 +479,14 @@ class Canvas(QLabel):
 
             self.inactiveLayers.append(self.activeLayers.pop())
             self.change_master_layer()
+            self.paintMirrorEvent()
             self.layer_change.emit()
         #self.update()
 
     def redo(self): # Now finishing command pattern
         if len(self.inactiveLayers) > 0:
             self.activeLayers.append(self.inactiveLayers.pop())
-            self.update()
+            self.paintMirrorEvent()
             self.layer_change.emit()
         #self.update()
 
@@ -483,7 +501,8 @@ class Canvas(QLabel):
         self.painter.drawPixmap(canvas.rect(), image_pixmap, image_pixmap.rect())
         self.painter.end()
         self.resizeCanvas(self.activeLayers[0].size())
-        self.update()
+        self.paintMirrorEvent()
+        ##self.update()
         self.last_save = self.activeLayers[0].toImage()
 
 class CanvasWindow(QScrollArea):
@@ -821,6 +840,11 @@ class UINoteWindow(QWidget):
         else:
             self.redo_button.setDisabled(True)
 
+        compare_canvas_layer = QtGui.QPixmap(self.canvas_window.label.size())
+        compare_canvas_layer.fill(Qt.white)
+        if self.canvas_window.label.activeLayers[0].toImage() == compare_canvas_layer.toImage() or self.canvas_window.label.activeLayers[-1].toImage() == compare_canvas_layer.toImage():
+            self.clear_button.setDisabled(True)
+
 
     # def pen_button_display(self):
     #     self.pen_button = ToolButton(assets["pen"])
@@ -943,7 +967,8 @@ class UINoteWindow(QWidget):
         header_dialog.setLayout(layout)
         header_dialog.update()
         header_dialog.show()
-        self.update()
+        ##self.update()
+        self.canvas_window.label.paintMirrorEvent()
 
     def accept_header(self, course, time_checkbox, dialog):
         if len(self.heading_title.text()) == 0 and len(self.heading_name.text()) == 0 and course == "---" and (not time_checkbox.isChecked()):
@@ -989,7 +1014,8 @@ class UINoteWindow(QWidget):
         self.header_widget = FloatingWidget(self.header_text, self.canvas_window)
         self.header_widget.show()
         dialog.close()
-        self.update()
+        ##self.update()
+        self.canvas_window.label.paintMirrorEvent()
         return
 
     def insert_table(self):
@@ -1012,7 +1038,8 @@ class UINoteWindow(QWidget):
         table_dialog.setLayout(layout)
         table_dialog.update()
         table_dialog.show()
-        self.update()
+        ##self.update()
+        self.canvas_window.label.paintMirrorEvent()
 
     def accept_table(self, rows, columns, dialog):
         if len(rows) == 0 or len(columns) == 0:
@@ -1031,7 +1058,8 @@ class UINoteWindow(QWidget):
         self.canvas_window.label.floatingWidgets.append(table_widget)
         table_widget.show()
         dialog.close()
-        self.update()
+        ##self.update()
+        self.canvas_window.label.paintMirrorEvent()
         return
 
     def insert_image(self):

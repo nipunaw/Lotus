@@ -40,11 +40,11 @@ class UISettingsWindow(QWidget):
         self.pen_size.setText("Default Pen Size: ")
         self.pen_size.setStyleSheet("font-family: Lato")
         self.pen_size_dropdown = QtWidgets.QComboBox()
-        self.pen_size_dropdown.addItem("3")
-        self.pen_size_dropdown.addItem("4")
         self.pen_size_dropdown.addItem("5")
         self.pen_size_dropdown.addItem("6")
         self.pen_size_dropdown.addItem("7")
+        self.pen_size_dropdown.addItem("8")
+        self.pen_size_dropdown.addItem("9")
         self.pen_size_dropdown.setCurrentIndex(int(config['DEFAULT']['pen_size'])-3)
 
 
@@ -52,11 +52,11 @@ class UISettingsWindow(QWidget):
         self.eraser_size.setText("Default Eraser Size: ")
         self.eraser_size.setStyleSheet("font-family: Lato")
         self.eraser_size_dropdown = QtWidgets.QComboBox()
-        self.eraser_size_dropdown.addItem("3")
-        self.eraser_size_dropdown.addItem("4")
         self.eraser_size_dropdown.addItem("5")
         self.eraser_size_dropdown.addItem("6")
         self.eraser_size_dropdown.addItem("7")
+        self.eraser_size_dropdown.addItem("8")
+        self.eraser_size_dropdown.addItem("9")
         self.eraser_size_dropdown.setCurrentIndex(int(config['DEFAULT']['eraser_size']) - 3)
 
         self.heading_default = QtWidgets.QLabel()
