@@ -41,6 +41,7 @@ class FloatingWidget(QtWidgets.QWidget):
         self.top_side = False
         self.bottom_side = False
         self.to_delete = False
+        self.is_heading = False
 
 
         ## Right-click options

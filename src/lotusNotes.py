@@ -644,7 +644,7 @@ class UINoteWindow(QWidget):
         self.heading_course = QtWidgets.QLineEdit()
         self.heading_date = QtWidgets.QLineEdit()
         self.add_date = True
-        self.header_place = 0
+        # self.header_place = 0
 
         ########### Layout ############
         self.setMinimumSize(1200, 600)
@@ -676,6 +676,7 @@ class UINoteWindow(QWidget):
 
         self.header_text = QtWidgets.QPlainTextEdit()
         self.header_widget = FloatingWidget(self.header_text, self.canvas_window.label, True)
+        self.header_widget.is_heading = True
         self.canvas_window.label.floatingWidgets.append(self.header_widget)
         self.header_widget.hide()
 
@@ -1032,18 +1033,22 @@ class UINoteWindow(QWidget):
         # self.header_text.setFixedHeight(ylen)
         text.setGeometry(0, 0, xlen, ylen)
         text.setFixedHeight(ylen)
-        print(len(self.canvas_window.label.floatingWidgets))
-        print(self.header_place)
+        # print(len(self.canvas_window.label.floatingWidgets))
+        # print(self.header_place)
+        for i in self.canvas_window.label.floatingWidgets:
+            if i.is_heading:
+                i.to_delete = True
+                self.canvas_window.label.floatingWidgetDelete(i)
+        # self.canvas_window.label.floatingWidgetDelete(self.canvas_window.label.floatingWidgets[self.header_place])
 
-        self.floatingWidgetDelete(self.canvas_window.label.floatingWidgets[self.header_place])
-
-        print(len(self.canvas_window.label.floatingWidgets))
-        print(self.header_place)
+        # print(len(self.canvas_window.label.floatingWidgets))
+        # print(self.header_place)
         header_widget = FloatingWidget(text, self.canvas_window.label, 0, 0, True)
+        header_widget.is_heading = True
         self.canvas_window.label.floatingWidgets.append(header_widget)
-        self.header_place = len(self.canvas_window.label.floatingWidgets) - 1
-        print(len(self.canvas_window.label.floatingWidgets))
-        print(self.header_place)
+        # self.header_place = len(self.canvas_window.label.floatingWidgets) - 1
+        # print(len(self.canvas_window.label.floatingWidgets))
+        # print(self.header_place)
         # if not self.header_widget.isVisible():
         #     self.header_widget = FloatingWidget(self.header_text, self.canvas_window, 0, 0, True)
         #     self.canvas_window.label.floatingWidgets.append(self.header_widget)
