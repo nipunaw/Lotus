@@ -30,6 +30,7 @@ assets = {
     "color_indicator" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/color_indicator.png'),
     "pen_eraser_cursor": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/PenEraserCursor.png'),
     "help": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help.png'),
+    "help_darker": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_darker.png'),
     "help_lotus_home": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_lotus_home.jpg'),
     "help_new_notes_1": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_new_notes_1.jpg'),
     "help_new_notes_2": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_new_notes_2.jpg'),

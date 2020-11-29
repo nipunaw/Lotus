@@ -38,8 +38,8 @@ class UIHelpWindow(QWidget):
 
     def help_ui(self):
         #self.mainLayout = QVBoxLayout()
-        self.helpTextEditor = QTextEdit()
-        self.helpTextEditor.setWindowTitle("Help")
+        _id = QtGui.QFontDatabase.addApplicationFont(assets["lato"])
+        self.helpTextEditor = QTextEdit(self)
         self.helpTextEditor.setMinimumSize(800,500)
         #self.mainLayout.addWidget(self.helpTextEditor)
 
@@ -52,12 +52,12 @@ class UIHelpWindow(QWidget):
 
 
         # Home Section
-        self.helpTextEditor.setCurrentFont(QFont('Arial'))
+        self.helpTextEditor.setCurrentFont(QFont('Lato'))
         self.helpTextEditor.setFontUnderline(True)
-        self.helpTextEditor.setFontPointSize(36)
-        self.helpTextEditor.setText('Help')
+        self.helpTextEditor.setFontPointSize(25)
+        self.helpTextEditor.setText('HELP SECTIONS')
 
-        self.helpTextEditor.setCurrentFont(QFont('Arial'))
+        self.helpTextEditor.setCurrentFont(QFont('Lato'))
         self.helpTextEditor.setFontUnderline(False)
         self.helpTextEditor.setFontPointSize(10)
 
@@ -68,12 +68,12 @@ class UIHelpWindow(QWidget):
         self.helpTextEditor.append('\n')
 
         # New Notes Section
-        self.helpTextEditor.setCurrentFont(QFont('Arial'))
+        self.helpTextEditor.setCurrentFont(QFont('Lato'))
         self.helpTextEditor.setFontUnderline(True)
         self.helpTextEditor.setFontPointSize(24)
         self.helpTextEditor.append('New Notes')
 
-        self.helpTextEditor.setCurrentFont(QFont('Arial'))
+        self.helpTextEditor.setCurrentFont(QFont('Lato'))
         self.helpTextEditor.setFontUnderline(False)
         self.helpTextEditor.setFontPointSize(10)
         self.helpTextEditor.append('\n')
@@ -125,12 +125,12 @@ class UIHelpWindow(QWidget):
         self.helpTextEditor.append('\n')
 
         # Previous Notes Section
-        self.helpTextEditor.setCurrentFont(QFont('Arial'))
+        self.helpTextEditor.setCurrentFont(QFont('Lato'))
         self.helpTextEditor.setFontUnderline(True)
         self.helpTextEditor.setFontPointSize(24)
         self.helpTextEditor.append('Previous Notes')
 
-        self.helpTextEditor.setCurrentFont(QFont('Arial'))
+        self.helpTextEditor.setCurrentFont(QFont('Lato'))
         self.helpTextEditor.setFontUnderline(False)
         self.helpTextEditor.setFontPointSize(10)
         self.helpTextEditor.append('\n')
@@ -141,12 +141,12 @@ class UIHelpWindow(QWidget):
         self.helpTextEditor.append('\n')
 
         # Schedule Section
-        self.helpTextEditor.setCurrentFont(QFont('Arial'))
+        self.helpTextEditor.setCurrentFont(QFont('Lato'))
         self.helpTextEditor.setFontUnderline(True)
         self.helpTextEditor.setFontPointSize(24)
         self.helpTextEditor.append('Schedule')
 
-        self.helpTextEditor.setCurrentFont(QFont('Arial'))
+        self.helpTextEditor.setCurrentFont(QFont('Lato'))
         self.helpTextEditor.setFontUnderline(False)
         self.helpTextEditor.setFontPointSize(10)
         self.helpTextEditor.append('\n')
@@ -188,5 +188,5 @@ class UIHelpWindow(QWidget):
         #    'Clicking on the desired file will open it in a new notes window for you to edit further.\n')
 
         self.helpTextEditor.moveCursor(QtGui.QTextCursor.Start)
-        self.helpTextEditor.show()
+        #self.helpTextEditor.show()
         #self.setLayout(self.mainLayout)

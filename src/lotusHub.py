@@ -236,7 +236,7 @@ class UIHubWindow(QWidget):
         self.schedule_button = CircleButton(assets["schedule"], assets["scheduleDarker"])
         self.previous_notes_button = CircleButton(assets["previousNotes"], assets["previousNotesDarker"])
         self.settings_button = CircleButton(assets["settings"], assets["settings_darker"], 20, 20)
-        self.help_button = CircleButton(assets["help"], assets["help"], 20, 20)
+        self.help_button = CircleButton(assets["help"], assets["help_darker"], 20, 20)
 
     def menu_ui(self):
         self.menu_background = QtWidgets.QLabel(self)

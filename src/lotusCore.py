@@ -220,36 +220,18 @@ class MainWindow(QMainWindow):
 
         self.SettingsWindow.show()
 
-    def update_header(self, name):
-        self.HubWindow.user_welcome.setText("Welcome back "+ name)
-
-    def startSettingsWindow(self):
-        self.SettingsWindow = UISettingsWindow()
-        self.SettingsWindow.pen_width_updated.connect(set_default_pen_width)
-        self.SettingsWindow.eraser_width_updated.connect(set_default_eraser_width)
-        self.SettingsWindow.name_updated.connect(self.update_header) # lambda state, x = self.updateSettingsWindow() : self.HubWindow.user_welcome.setText(x)
-        self.setWindowTitle("Settings")
-        self.setCentralWidget(self.SettingsWindow)
-
-        ########### Background color ###########
-        p = self.SettingsWindow.palette()
-        p.setColor(self.SettingsWindow.backgroundRole(), Qt.white)
-        self.setPalette(p)
-
-        self.show()
-
     def startHelpWindow(self):
         self.HelpWindow = UIHelpWindow()
-        self.setWindowTitle("Help")
-        self.setCentralWidget(self.HelpWindow)
+        self.HelpWindow.setWindowTitle("Help Page")
+        #self.setCentralWidget(self.HelpWindow)
         self.HelpWindow.setFixedSize(800, 500)
 
-        ########### Background color ###########
-        p = self.HelpWindow.palette()
-        p.setColor(self.HelpWindow.backgroundRole(), Qt.white)
-        self.setPalette(p)
+        # ########### Background color ###########
+        # p = self.HelpWindow.palette()
+        # p.setColor(self.HelpWindow.backgroundRole(), Qt.white)
+        # self.setPalette(p)
 
-        #self.show()
+        self.HelpWindow.show()
 
 
     def connectCalendarWindowButtons(self, buttons : list):
