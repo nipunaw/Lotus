@@ -13,6 +13,7 @@ import os
 from datetime import date
 from enum import Enum
 import pytesseract
+import cv2
 from PIL import Image
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt, pyqtSignal, QSize, QPoint, QRect
@@ -152,7 +153,6 @@ class Canvas(QLabel):
         # self.test_3 = FloatingWidget(self.helloWidget, self, 10, 10)
         # self.test_3.setGeometry(10, 10, 300, 200)
         # self.floatingWidgets.append(self.test_3)
-
         # Painters
         self.painter = QPainter()
         self.layer_painter = QPainter()
@@ -215,7 +215,8 @@ class Canvas(QLabel):
             self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
             self.painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
             self.painter.setPen(self.current_utensil.pen())
-            self.painter.drawPoint(event.pos())
+            #self.painter.drawPoint(event.pos())
+
 
             self.activeLayers.append(new_canvas_layer)
             self.inactiveLayers.clear()
@@ -632,7 +633,7 @@ class UINoteWindow(QWidget):
         self.file_menu.addAction(self.save_as_option)
 
         # OCR
-        self.find_ocr = QtWidgets.QAction("Find Typed/Neat Text", self)
+        self.find_ocr = QtWidgets.QAction("Send Neatly Written Notes to .txt File (Beta)", self)
         self.find_ocr.triggered.connect(self.ocr)
         self.ocr_menu = self.menu_bar.addMenu("OCR")
         self.ocr_menu.addAction(self.find_ocr)
@@ -948,7 +949,6 @@ class UINoteWindow(QWidget):
                                                                     "Save Notes", # Caption
                                                                     "notes.jpg", # File-name, directory
                                                                     "JPG (*.jpg);;PNG (*.png)") # File types
-
         # Blank file path
         if file_path == "":
             return
@@ -1225,7 +1225,25 @@ class UINoteWindow(QWidget):
         if self.canvas_window.label.hasChanged() or self.file_path == "":
             self.savePopup()
         if not self.canvas_window.label.hasChanged():
-            ocr_findings = pytesseract.image_to_string(Image.open(self.file_path))
+            # image pre-processing
+            img = cv2.imread(self.file_path, cv2.IMREAD_GRAYSCALE)  # grayscales image
+            #kernel = np.ones((1, 1), np.uint8)                     # only improves accuracy when no highlighting present
+            #img = cv2.dilate(img, kernel, iterations=1)            # otherwise decreases accuracy
+            #img = cv2.erode(img, kernel, iterations=1)
+            thresh = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]  # threshing
+            gauss = cv2.GaussianBlur(thresh, (3, 3), 0)  # gaussian blurring
+            custom_config = r'-l eng --oem 3 --psm 6 '
+
+            ocr_findings = pytesseract.image_to_string(gauss, config=custom_config)
+            # ocr_findings = pytesseract.image_to_string(Image.open(self.file_path))
+
+            # print ocr results to text file
+            # text file name will be the image_file_name.txt
+            self.text_file_path = os.path.splitext(self.file_path)[0] + '.txt'
+            with open(self.text_file_path, 'w') as text_file:
+                text_file.write(ocr_findings)
+
+            # ocr results into pop-up widget
             ocr_prompt = QtWidgets.QDialog(self)
             ocr_prompt.setWindowTitle("Typed Characters found (OCR)")
             options = QtWidgets.QDialogButtonBox.Close
