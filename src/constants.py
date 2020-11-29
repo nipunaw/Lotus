@@ -30,5 +30,22 @@ assets = {
     "color_indicator" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/color_indicator.png'),
     "pen_eraser_cursor": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/PenEraserCursor.png'),
     "help": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help.png'),
-    "help_lotus_home": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_lotus_home.jpg')
+    "help_lotus_home": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_lotus_home.jpg'),
+    "help_new_notes_1": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_new_notes_1.jpg'),
+    "help_new_notes_2": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_new_notes_2.jpg'),
+    "help_new_notes_3": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_new_notes_3.jpg'),
+    "help_new_notes_4": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_new_notes_4.jpg'),
+    "help_new_notes_5": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_new_notes_5.jpg'),
+    "help_new_notes_6": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_new_notes_6.jpg'),
+    "help_new_notes_7": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_new_notes_7.jpg'),
+    "help_new_notes_8": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_new_notes_8.jpg'),
+    "help_new_notes_9": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_new_notes_9.jpg'),
+    "help_new_notes_10": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_new_notes_10.jpg'),
+    "help_previous_notes_1": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_previous_notes_1.jpg'),
+    "help_schedule_1": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_schedule_1.jpg'),
+    "help_schedule_2": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_schedule_2.jpg'),
+    "help_schedule_3": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_schedule_3.jpg'),
+    "help_schedule_4": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_schedule_4.jpg'),
+    "help_schedule_5": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_schedule_5.jpg'),
+    "help_schedule_6": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_schedule_6.jpg')
 }
