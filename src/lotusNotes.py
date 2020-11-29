@@ -639,14 +639,24 @@ class UINoteWindow(QWidget):
         config.read(CONFIG_FILE)
         name = config['DEFAULT']['name']
         font = config['DEFAULT']['default_font']
+        style = config['DEFAULT']['default_style']
         font_size = config['DEFAULT']['default_font_size']
-        self.font = QtGui.QFont(font, int(font_size))
+        if style == "Bold":
+            self.font = QtGui.QFont(font, int(font_size),QtGui.QFont.Bold)
+        else:
+            database = QtGui.QFontDatabase()
+            styles_dict = {}
+            i = 0
+            for style_ in database.styles(font):
+                styles_dict[style_] = i
+                i = i+1
+            self.font = QtGui.QFont(font, int(font_size))
+            self.font.setStyle(QtGui.QFont.Style(styles_dict[style]))
         self.heading_title = QtWidgets.QLineEdit()
         self.heading_name = QtWidgets.QLineEdit(name)
         self.heading_course = QtWidgets.QLineEdit()
         self.heading_date = QtWidgets.QLineEdit()
         self.add_date = True
-        # self.header_place = 0
 
         ########### Layout ############
         self.setMinimumSize(1200, 600)
@@ -1023,7 +1033,9 @@ class UINoteWindow(QWidget):
                 max_len = len(date_str)
             height = height + 1
         composed_heading = composed_heading.rstrip("\n")
+
         text = QtWidgets.QPlainTextEdit(composed_heading)
+        print(self.font.styleName())
         text.setFont(self.font)
 
         xlen = (max_len+4)*self.font.pointSize()
@@ -1115,12 +1127,11 @@ class UINoteWindow(QWidget):
         self.canvas_window.label.floatingWidgets.append(caption_widget)
         caption_widget.child_widget.setFont(self.font)
         caption_widget.show()
-        # caption.setFixedSize(caption.fontMetrics().boundingRect(caption.text()).width(), caption.fontMetrics().boundingRect(caption.text()).height())
         self.update()
         return
 
     def settings(self):
-        arial_font = QtGui.QFont("Times New Roman", 20, QtGui.QFont.Bold)
+        arial_font = QtGui.QFont(self.font.family(), self.font.pointSize())
         font, ok = QtWidgets.QFontDialog.getFont(arial_font)
         if ok:
             self.font = font
