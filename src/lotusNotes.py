@@ -573,6 +573,12 @@ class UINoteWindow(QWidget):
         self.image_option.triggered.connect(self.insert_image)
         self.template_menu.addAction(self.image_option)
 
+        self.caption_option = QtWidgets.QAction("Insert Caption", self)
+        #self.caption_option.setShortcut("Ctrl+C")
+        self.caption_option.triggered.connect(self.insert_caption)
+        self.template_menu.addAction(self.caption_option)
+
+
         self.settings_option = QtWidgets.QAction("Font")
         self.settings_option.triggered.connect(self.settings)
         self.settings_menu = self.menu_bar.addMenu("Settings")
@@ -952,7 +958,6 @@ class UINoteWindow(QWidget):
         # Get current date
         today = date.today()
         date_str = today.strftime("%B %d, %Y")
-        #hello there how are you doing 5.5*len
         height = 1
         max_len = 3
         composed_heading = ""
@@ -1042,6 +1047,17 @@ class UINoteWindow(QWidget):
         image_widget = FloatingWidget(image_label, self.canvas_window.label, 10, 10)
         self.canvas_window.label.floatingWidgets.append(image_widget)
         image_widget.show()
+        self.update()
+        return
+
+    def insert_caption(self):
+        caption = QtWidgets.QLineEdit()
+        caption.setGeometry(0,0,160,20)
+        caption_widget = FloatingWidget(caption, self.canvas_window.label, 10, 10)
+        self.canvas_window.label.floatingWidgets.append(caption_widget)
+        # caption_widget.child_widget.setFont(self.heading_font)
+        caption_widget.show()
+        # caption.setFixedSize(caption.fontMetrics().boundingRect(caption.text()).width(), caption.fontMetrics().boundingRect(caption.text()).height())
         self.update()
         return
 
