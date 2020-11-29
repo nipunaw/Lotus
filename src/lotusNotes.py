@@ -413,6 +413,10 @@ class Canvas(QLabel):
     def hasChanged(self):
         if self.last_save is None:
             return False
+        if len(self.floatingWidgets) > 0:
+            return True
+        # elif len(self.floatingWidgets) == 1 and not self.floatingWidgets[0].is_heading:
+        #     return True
         return not self.pixmap().toImage() == self.last_save
 
     def floatingWidgetPlace(self, widget):
@@ -725,6 +729,13 @@ class UINoteWindow(QWidget):
     def closeEvent(self, event):
         if self.canvas_window.label.hasChanged():
             self.savePopup()
+            if self.cancellation:
+                event.ignore()
+            elif self.non_cancelleation:
+                event.accept()
+            else:
+                event.ignore()
+
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         if event.key() == Qt.Key_BracketLeft:
@@ -740,18 +751,31 @@ class UINoteWindow(QWidget):
 
     def savePopup(self):
         self.save_prompt = QtWidgets.QDialog(self)
+        self.cancellation = False
+        self.non_cancelleation = False
         self.save_prompt.setWindowTitle("Save your changes?")
-        options = QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel
+        self.save_prompt.setFixedSize(240, 50)
+        options = QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Discard | QtWidgets.QDialogButtonBox.Cancel
         self.save_prompt.buttonBox = QtWidgets.QDialogButtonBox(options)
         self.save_prompt.buttonBox.accepted.connect(self.acceptSave)
-        self.save_prompt.buttonBox.rejected.connect(self.save_prompt.reject)
+        self.save_prompt.buttonBox.rejected.connect(self.acceptCancel)
+        self.save_prompt.buttonBox.button(QtWidgets.QDialogButtonBox.Discard).clicked.connect(self.acceptDiscard)
         self.save_prompt.layout = QtWidgets.QVBoxLayout()
         self.save_prompt.layout.addWidget(self.save_prompt.buttonBox)
         self.save_prompt.setLayout(self.save_prompt.layout)
         self.save_prompt.exec_()
 
+    def acceptCancel(self):
+        self.cancellation = True
+        self.save_prompt.deleteLater()
+
     def acceptSave(self):
+        self.non_cancelleation = True
         self.save()
+        self.save_prompt.deleteLater()
+
+    def acceptDiscard(self):
+        self.non_cancelleation = True
         self.save_prompt.deleteLater()
 
     def erase(self):
