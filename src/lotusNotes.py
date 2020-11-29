@@ -34,7 +34,9 @@ def default_config():
         config['DEFAULT'] = {'Name': '',
                              'Pen_Size': '5',
                              'Eraser_Size': '5',
-                             'Name_Heading': 'True'}
+                             'Name_Heading': 'True',
+                             'Default_Font': 'Times New Roman',
+                             'Default_Font_Size': '10'}
         config.write(file)
     file.close()
 
@@ -631,15 +633,18 @@ class UINoteWindow(QWidget):
 
         ########### Buttons ###########
         # Handled by resizeEvent
-        self.heading_font = QtGui.QFont("Times New Roman", 10, QtGui.QFont.Bold)
         config = configparser.ConfigParser()
         config.read(CONFIG_FILE)
         name = config['DEFAULT']['name']
+        font = config['DEFAULT']['default_font']
+        font_size = config['DEFAULT']['default_font_size']
+        self.font = QtGui.QFont(font, int(font_size))
         self.heading_title = QtWidgets.QLineEdit()
         self.heading_name = QtWidgets.QLineEdit(name)
         self.heading_course = QtWidgets.QLineEdit()
         self.heading_date = QtWidgets.QLineEdit()
         self.add_date = True
+        self.header_place = 0
 
         ########### Layout ############
         self.setMinimumSize(1200, 600)
@@ -670,7 +675,8 @@ class UINoteWindow(QWidget):
         # self.layout.addWidget(self.heading_date)
 
         self.header_text = QtWidgets.QPlainTextEdit()
-        self.header_widget = FloatingWidget(self.header_text, self.canvas_window.label)
+        self.header_widget = FloatingWidget(self.header_text, self.canvas_window.label, True)
+        self.canvas_window.label.floatingWidgets.append(self.header_widget)
         self.header_widget.hide()
 
         self.layout.setContentsMargins(0,0,0,0)
@@ -1014,14 +1020,37 @@ class UINoteWindow(QWidget):
                 max_len = len(date_str)
             height = height + 1
         composed_heading = composed_heading.rstrip("\n")
-        self.header_text.document().setPlainText(composed_heading)
-        self.header_text.setFont(self.heading_font)
-        xlen = (max_len+4)*self.heading_font.pointSize()
-        ylen = height*self.heading_font.pointSize()*2
-        self.header_text.setGeometry(0, 0, xlen, ylen)  # Dynamic sizing
-        self.header_widget.deleteLater()
-        self.header_widget = FloatingWidget(self.header_text, self.canvas_window)
-        self.header_widget.show()
+        text = QtWidgets.QPlainTextEdit(composed_heading)
+        text.setFont(self.font)
+        # if self.header_text is None:
+        #     self.header_text = QtWidgets.QPlainTextEdit()
+        # self.header_text.document().setPlainText(composed_heading)
+        # self.header_text.setFont(self.font)
+        xlen = (max_len+4)*self.font.pointSize()
+        ylen = height*self.font.pointSize()*2
+        # self.header_text.setGeometry(0, 0, xlen, ylen)  # Dynamic sizing
+        # self.header_text.setFixedHeight(ylen)
+        text.setGeometry(0, 0, xlen, ylen)
+        text.setFixedHeight(ylen)
+        print(len(self.canvas_window.label.floatingWidgets))
+        print(self.header_place)
+
+        self.floatingWidgetDelete(self.canvas_window.label.floatingWidgets[self.header_place])
+
+        print(len(self.canvas_window.label.floatingWidgets))
+        print(self.header_place)
+        header_widget = FloatingWidget(text, self.canvas_window.label, 0, 0, True)
+        self.canvas_window.label.floatingWidgets.append(header_widget)
+        self.header_place = len(self.canvas_window.label.floatingWidgets) - 1
+        print(len(self.canvas_window.label.floatingWidgets))
+        print(self.header_place)
+        # if not self.header_widget.isVisible():
+        #     self.header_widget = FloatingWidget(self.header_text, self.canvas_window, 0, 0, True)
+        #     self.canvas_window.label.floatingWidgets.append(self.header_widget)
+        # else:
+            # self.header_widget.deleteLater()
+            # self.header_widget.child_widget.document().setPlainText(composed_heading)
+        header_widget.show()
         dialog.close()
         ##self.update()
         self.canvas_window.label.paintMirrorEvent()
@@ -1081,7 +1110,7 @@ class UINoteWindow(QWidget):
         image_label = QLabel()
         image_label.setPixmap(image)
         image_label.setGeometry(0, 0, width, height)
-        image_widget = FloatingWidget(image_label, self.canvas_window.label, 10, 10)
+        image_widget = FloatingWidget(image_label, self.canvas_window.label, 10, 10, True)
         self.canvas_window.label.floatingWidgets.append(image_widget)
         image_widget.show()
         self.update()
@@ -1090,9 +1119,10 @@ class UINoteWindow(QWidget):
     def insert_caption(self):
         caption = QtWidgets.QLineEdit()
         caption.setGeometry(0,0,160,20)
-        caption_widget = FloatingWidget(caption, self.canvas_window.label, 10, 10)
+        caption.setFixedHeight(20)
+        caption_widget = FloatingWidget(caption, self.canvas_window.label, 10, 10, True)
         self.canvas_window.label.floatingWidgets.append(caption_widget)
-        # caption_widget.child_widget.setFont(self.heading_font)
+        caption_widget.child_widget.setFont(self.font)
         caption_widget.show()
         # caption.setFixedSize(caption.fontMetrics().boundingRect(caption.text()).width(), caption.fontMetrics().boundingRect(caption.text()).height())
         self.update()
@@ -1102,11 +1132,7 @@ class UINoteWindow(QWidget):
         arial_font = QtGui.QFont("Times New Roman", 20, QtGui.QFont.Bold)
         font, ok = QtWidgets.QFontDialog.getFont(arial_font)
         if ok:
-            self.heading_font = font
-        dialog = QtWidgets.QDialog()
-        time_checkbox = QtWidgets.QCheckBox("", self)
-        time_checkbox.setChecked(self.add_date)
-        self.accept_header( self.heading_course.text(), time_checkbox, dialog)
+            self.font = font
 
     def open(self, file_path:str=None):
         if self.canvas_window.label.hasChanged():

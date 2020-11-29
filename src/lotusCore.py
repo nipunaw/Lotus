@@ -51,7 +51,9 @@ class MainWindow(QMainWindow):
             config['DEFAULT'] = {'Name': '',
                                  'Pen_Size': '5',
                                  'Eraser_Size': '5',
-                                 'Name_Heading': 'True'}
+                                 'Name_Heading': 'True',
+                                 'Default_Font': 'Times New Roman',
+                                 'Default_Font_Size': '10'}
             config.write(file)
         file.close()
 
