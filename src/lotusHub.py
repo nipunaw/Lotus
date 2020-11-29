@@ -224,8 +224,8 @@ class UIHubWindow(QWidget):
         self.previous_notes_text.setText("Previous Notes")
         self.previous_notes_text.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
         self.previous_notes_text.setStyleSheet("font-size: 13px; font-family: Lato")
-        self.time = QtWidgets.QLabel(self)
-        self.date = QtWidgets.QLabel(self)
+        self.time = QtWidgets.QLabel()
+        self.date = QtWidgets.QLabel()
         self.time.setStyleSheet("color: white; font-size: 35px; font-family: Lato")
         self.date.setStyleSheet("color: white; font-size: 15px; font-family: Lato")
         self.time.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
@@ -258,7 +258,8 @@ class UIHubWindow(QWidget):
     def schedule_ui(self):
         self.schedule_background = QtWidgets.QLabel()
         self.pixmap = QtGui.QPixmap(assets["time_date"])
-        self.schedule_background.setPixmap(self.pixmap.scaled(610, 451, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        #self.schedule_background.setPixmap(self.pixmap.scaled(610, 451, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.schedule_background.setPixmap(self.pixmap.scaled(650, 491, Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
     #def new_note_button_display(self):
         #self.new_note_button.setFixedSize(120, 120)
@@ -387,9 +388,9 @@ class UIHubWindow(QWidget):
         menu_bar.setLayout(menu_bar_layout)
 
         ############ Lotus Logo ###########
-        self.schedule_background = QtWidgets.QLabel(self)
-        self.pixmap = QtGui.QPixmap(assets["time_date"])
-        self.schedule_background.setPixmap(self.pixmap.scaled(610, 451, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        # self.schedule_background = QtWidgets.QLabel(self)
+        # self.pixmap = QtGui.QPixmap(assets["time_date"])
+        # self.schedule_background.setPixmap(self.pixmap.scaled(610, 451, Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
         ########### Set-Up Grid Layout ###########
         # initialize grid layout
@@ -401,6 +402,8 @@ class UIHubWindow(QWidget):
         # self.layout.addWidget(self.menu_bar, 0, 0, 1, 4)
         # self.layout.addWidget(self.user_welcome, 0, 1)
 
+        horizontal_spacer = QtWidgets.QSpacerItem(15, 1)
+
         self.layout.addWidget(self.schedule_background, 0, 0, 6, 3)  # Qt.AlignLeft
         self.layout.addWidget(self.upcoming_classes, 2, 0, 4, 3)  # Qt.AlignLeft
         self.layout.addWidget(self.time, 0, 1)
@@ -411,6 +414,7 @@ class UIHubWindow(QWidget):
         self.layout.addWidget(self.schedule_text, 3, 3)
         self.layout.addWidget(self.previous_notes_button, 4, 3)
         self.layout.addWidget(self.previous_notes_text, 5, 3)
+        self.layout.addItem(horizontal_spacer, 0, 4)
 
         self.layout.setHorizontalSpacing(30)
         self.layout.setVerticalSpacing(5)
