@@ -436,6 +436,7 @@ class Canvas(QLabel):
             if self.floatingWidgets[i].to_delete == True:
                 self.floatingWidgets.pop(i)
                 widget.deleteLater()
+                return
 
     def save(self, file_path):
         for i in self.floatingWidgets:
@@ -1023,38 +1024,22 @@ class UINoteWindow(QWidget):
         composed_heading = composed_heading.rstrip("\n")
         text = QtWidgets.QPlainTextEdit(composed_heading)
         text.setFont(self.font)
-        # if self.header_text is None:
-        #     self.header_text = QtWidgets.QPlainTextEdit()
-        # self.header_text.document().setPlainText(composed_heading)
-        # self.header_text.setFont(self.font)
+
         xlen = (max_len+4)*self.font.pointSize()
         ylen = height*self.font.pointSize()*2
-        # self.header_text.setGeometry(0, 0, xlen, ylen)  # Dynamic sizing
-        # self.header_text.setFixedHeight(ylen)
         text.setGeometry(0, 0, xlen, ylen)
         text.setFixedHeight(ylen)
-        # print(len(self.canvas_window.label.floatingWidgets))
-        # print(self.header_place)
+
         for i in range(len(self.canvas_window.label.floatingWidgets)):
             if self.canvas_window.label.floatingWidgets[i].is_heading:
                 self.canvas_window.label.floatingWidgets[i].to_delete = True
                 self.canvas_window.label.floatingWidgetDelete(self.canvas_window.label.floatingWidgets[i])
-        # self.canvas_window.label.floatingWidgetDelete(self.canvas_window.label.floatingWidgets[self.header_place])
+                break
 
-        # print(len(self.canvas_window.label.floatingWidgets))
-        # print(self.header_place)
         header_widget = FloatingWidget(text, self.canvas_window.label, 0, 0, True)
         header_widget.is_heading = True
         self.canvas_window.label.floatingWidgets.append(header_widget)
-        # self.header_place = len(self.canvas_window.label.floatingWidgets) - 1
-        # print(len(self.canvas_window.label.floatingWidgets))
-        # print(self.header_place)
-        # if not self.header_widget.isVisible():
-        #     self.header_widget = FloatingWidget(self.header_text, self.canvas_window, 0, 0, True)
-        #     self.canvas_window.label.floatingWidgets.append(self.header_widget)
-        # else:
-            # self.header_widget.deleteLater()
-            # self.header_widget.child_widget.document().setPlainText(composed_heading)
+
         header_widget.show()
         dialog.close()
         ##self.update()
@@ -1097,7 +1082,7 @@ class UINoteWindow(QWidget):
         table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         table.setFixedSize(table.horizontalHeader().length() + table.verticalHeader().width(),
                                         table.verticalHeader().length() + table.horizontalHeader().height())
-        table_widget = FloatingWidget(table, self.canvas_window, 10, 10)
+        table_widget = FloatingWidget(table, self.canvas_window.label, 10, 10)
         self.canvas_window.label.floatingWidgets.append(table_widget)
         table_widget.show()
         dialog.close()
