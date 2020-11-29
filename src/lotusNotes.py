@@ -534,9 +534,9 @@ class CanvasWindow(QScrollArea):
 class UINoteWindow(QWidget):
     deleted_file = pyqtSignal(str)
 
-    def __init__(self, file_path:str, parent=None, scheduled=False):
+    def __init__(self, schedule, file_path:str, parent=None, scheduled=False):
         super(UINoteWindow, self).__init__(parent)
-
+        self.schedule = schedule
         self.file_path = file_path
         self.scheduled = scheduled
 
@@ -902,26 +902,16 @@ class UINoteWindow(QWidget):
 
     ########### Heading ###########
     def heading(self):
-        try:
-            with open(SCHEDULE_FILE_PATH) as f:
-                data = json.load(f)
-        except FileNotFoundError:
-            data = []
+        # Get all recurring classes and events
         name_classes = []
-        for b in data:
-            name_classes.append(b['name'])
+        for (event_name, data) in self.schedule.schedule.items():
+            event_type = data['type']
+            if event_type == 'class' or event_type == 'recurring event':
+                name_classes.append(event_name)
+        # Open dialog for user input
         header_dialog = QtWidgets.QDialog(self)
         header_dialog.setWindowTitle("Add a header")
         layout = QtWidgets.QFormLayout()
-        # title_edit = QtWidgets.QLineEdit()
-        # name_edit = QtWidgets.QLineEdit()
-        # config = configparser.ConfigParser()
-        # config.read(CONFIG_FILE)
-        # name = config['DEFAULT']['name']
-        # name_edit.setText(name)
-        # if self.name.text() != name:
-        #     name_edit.setText(self.name.text())
-        # title_edit.setText(self.heading_title.text())
         layout.addRow(self.tr("&Title:"), self.heading_title)
         layout.addRow(self.tr("&Name:"), self.heading_name)
         time_checkbox = QtWidgets.QCheckBox("Add Date", self)
@@ -1015,7 +1005,7 @@ class UINoteWindow(QWidget):
         self.update()
 
     def accept_table(self, rows, columns, dialog):
-        if len(rows) == 0 and len(columns) == 0:
+        if len(rows) == 0 or len(columns) == 0:
             #prompt to add at least one field
             error = QtWidgets.QMessageBox()
             error.setText("Please fill both entries.")

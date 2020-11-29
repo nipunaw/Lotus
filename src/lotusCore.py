@@ -104,7 +104,7 @@ class MainWindow(QMainWindow):
 
 
     def NoteWindowSeparate(self, file_path=None, scheduled=False, event_name=None, event_date=None, event_time=None):
-        window = UINoteWindow(file_path=file_path, scheduled=scheduled)
+        window = UINoteWindow(self.schedule, file_path=file_path, scheduled=scheduled)
         self.newNotes.append(window)
         if file_path:
             if scheduled:
