@@ -45,7 +45,7 @@ class UISettingsWindow(QWidget):
         self.pen_size_dropdown.addItem("7")
         self.pen_size_dropdown.addItem("8")
         self.pen_size_dropdown.addItem("9")
-        self.pen_size_dropdown.setCurrentIndex(int(config['DEFAULT']['pen_size'])-3)
+        self.pen_size_dropdown.setCurrentIndex(int(config['DEFAULT']['pen_size'])-5)
 
 
         self.eraser_size = QtWidgets.QLabel()
@@ -57,7 +57,7 @@ class UISettingsWindow(QWidget):
         self.eraser_size_dropdown.addItem("7")
         self.eraser_size_dropdown.addItem("8")
         self.eraser_size_dropdown.addItem("9")
-        self.eraser_size_dropdown.setCurrentIndex(int(config['DEFAULT']['eraser_size']) - 3)
+        self.eraser_size_dropdown.setCurrentIndex(int(config['DEFAULT']['eraser_size']) - 5)
 
         self.heading_default = QtWidgets.QLabel()
         self.heading_default.setText("New notes have name in heading ")

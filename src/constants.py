@@ -18,6 +18,7 @@ assets = {
     "lato" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/Lato-Regular.ttf'),
     "logo_black" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/logo_black.png'),
     "settings" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/settings.png'),
+    "settings_darker" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/settings_darker.png'),
     "pen" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/pen.png'),
     "eraser" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/eraser.png'),
     "highlighter" : os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/highlighter.png'),

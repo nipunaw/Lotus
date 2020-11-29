@@ -80,6 +80,7 @@ class MainWindow(QMainWindow):
             self.HubWindow.schedule_button.clicked.connect(
                 lambda state, x=self.schedule: self.startCalenderWindow(self.schedule))
             self.HubWindow.previous_notes_button.clicked.connect(self.startPreviousWindow)
+            self.HubWindow.settings_button.clicked.connect(self.startSettingsWindow)
             self.HubWindow.show()
 
         elif self.HubWindow.isHidden():
