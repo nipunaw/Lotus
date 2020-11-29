@@ -556,7 +556,7 @@ class UINoteWindow(QWidget):
         if not self.update_open_recent_menu():
             self.open_recent_option.setDisabled(True)
 
-        # Headings
+        # Headings and Templates
         self.heading_option = QtWidgets.QAction("Add/Edit Heading", self)
         self.heading_option.setShortcut("Ctrl+H")
         self.heading_option.triggered.connect(self.heading)
@@ -567,6 +567,11 @@ class UINoteWindow(QWidget):
         self.table_option.setShortcut("Ctrl+T") # Might not need
         self.table_option.triggered.connect(self.insert_table)
         self.template_menu.addAction(self.table_option)
+
+        self.image_option = QtWidgets.QAction("Insert Image", self)
+        self.image_option.setShortcut("Ctrl+I") # Might not need
+        self.image_option.triggered.connect(self.insert_image)
+        self.template_menu.addAction(self.image_option)
 
         self.settings_option = QtWidgets.QAction("Font")
         self.settings_option.triggered.connect(self.settings)
@@ -900,7 +905,7 @@ class UINoteWindow(QWidget):
             with open(DIRECTORY_FILE, "w+") as f:
                 f.write(self.file_path + "\n")
 
-    ########### Heading ###########
+    ########### Heading and Templates ###########
     def heading(self):
         # Get all recurring classes and events
         name_classes = []
@@ -1021,6 +1026,22 @@ class UINoteWindow(QWidget):
         self.canvas_window.label.floatingWidgets.append(table_widget)
         table_widget.show()
         dialog.close()
+        self.update()
+        return
+
+    def insert_image(self):
+        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "/home", "JPG (*.jpg);;PNG (*.png)")
+        if file_path == "":
+            return
+        image = QPixmap(file_path)
+        height = image.height()
+        width = image.width()
+        image_label = QLabel()
+        image_label.setPixmap(image)
+        image_label.setGeometry(0, 0, width, height)
+        image_widget = FloatingWidget(image_label, self.canvas_window.label, 10, 10)
+        self.canvas_window.label.floatingWidgets.append(image_widget)
+        image_widget.show()
         self.update()
         return
 
