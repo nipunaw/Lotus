@@ -161,14 +161,15 @@ class MainWindow(QMainWindow):
     def startPreviousWindow(self):
         self.PreviousWindow = UIPreviousWindow(self.schedule, set_paths=False)
         self.PreviousWindow.setFixedSize(600, 400)
-        self.PreviousWindow.setMaximumSize(600, 400) # not working
-        self.setWindowTitle("Previous Notes")
-        self.setCentralWidget(self.PreviousWindow)
+        self.PreviousWindow.setWindowTitle("Previous Notes")
+
+
+        #self.setCentralWidget(self.PreviousWindow)
 
         ########### Background color ###########
-        p = self.PreviousWindow.palette()
-        p.setColor(self.PreviousWindow.backgroundRole(), Qt.white)
-        self.setPalette(p)
+        # p = self.PreviousWindow.palette()
+        # p.setColor(self.PreviousWindow.backgroundRole(), Qt.white)
+        # self.setPalette(p)
 
         ########### Button handling ###########
         for i in range(len(self.PreviousWindow.directories)):
@@ -182,7 +183,7 @@ class MainWindow(QMainWindow):
              except KeyError:
                 pass
 
-        self.show()
+        self.PreviousWindow.show()
 
     def connect_scheduled_notes_buttons(self, buttons: list):
         for (button, name, date, time) in buttons:
@@ -202,16 +203,18 @@ class MainWindow(QMainWindow):
         self.SettingsWindow.pen_width_updated.connect(set_default_pen_width)
         self.SettingsWindow.eraser_width_updated.connect(set_default_eraser_width)
         self.SettingsWindow.name_updated.connect(self.update_header) # lambda state, x = self.updateSettingsWindow() : self.HubWindow.user_welcome.setText(x)
-        self.SettingsWindow.save_btn.clicked.connect(self.close)
-        self.setWindowTitle("Settings")
-        self.setCentralWidget(self.SettingsWindow)
+        self.SettingsWindow.save_btn.clicked.connect(self.SettingsWindow.close)
+        self.SettingsWindow.setWindowTitle("Settings")
+        self.SettingsWindow.setFixedSize(400, 300)
+
+        #self.setCentralWidget(self.SettingsWindow)
 
         ########### Background color ###########
         p = self.SettingsWindow.palette()
         p.setColor(self.SettingsWindow.backgroundRole(), Qt.white)
-        self.setPalette(p)
+        self.SettingsWindow.setPalette(p)
 
-        self.show()
+        self.SettingsWindow.show()
 
     def connectCalendarWindowButtons(self, buttons : list):
         for (button, cls, date) in buttons:
