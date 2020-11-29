@@ -1035,10 +1035,10 @@ class UINoteWindow(QWidget):
         text.setFixedHeight(ylen)
         # print(len(self.canvas_window.label.floatingWidgets))
         # print(self.header_place)
-        for i in self.canvas_window.label.floatingWidgets:
-            if i.is_heading:
-                i.to_delete = True
-                self.canvas_window.label.floatingWidgetDelete(i)
+        for i in range(len(self.canvas_window.label.floatingWidgets)):
+            if self.canvas_window.label.floatingWidgets[i].is_heading:
+                self.canvas_window.label.floatingWidgets[i].to_delete = True
+                self.canvas_window.label.floatingWidgetDelete(self.canvas_window.label.floatingWidgets[i])
         # self.canvas_window.label.floatingWidgetDelete(self.canvas_window.label.floatingWidgets[self.header_place])
 
         # print(len(self.canvas_window.label.floatingWidgets))
