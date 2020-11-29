@@ -100,7 +100,7 @@ class UISettingsWindow(QWidget):
 
 
         self.heading_default = QtWidgets.QLabel()
-        self.heading_default.setText("New notes have name in heading ")
+        self.heading_default.setText("New notes start with heading: ")
         self.heading_default.setStyleSheet("font-family: Lato")
 
         self.heading_default_checkbox = QtWidgets.QCheckBox()

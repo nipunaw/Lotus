@@ -426,9 +426,9 @@ class Canvas(QLabel):
         self.painter.end()
         ##self.update()
         self.paintMirrorEvent()
-        widget.deleteLater()
-        # widget.to_delete = True
-        # self.floatingWidgetDelete(widget)
+        #widget.deleteLater()
+        widget.to_delete = True
+        self.floatingWidgetDelete(widget)
         #self.floatingWidgets.remove(widget)
         self.layer_change.emit()
 
