@@ -88,6 +88,8 @@ class UISettingsWindow(QWidget):
         if index >= 0:
             self.font_style_dropdown.setCurrentIndex(index)
 
+        self.font_style_dropdown.currentIndexChanged.connect(self.update_font_size)
+
         self.font_size_dropdown = QtWidgets.QComboBox()
         for size in database.smoothSizes(self.font_type_dropdown.currentText(), self.font_style_dropdown.currentText()):
             self.font_size_dropdown.addItem(str(size))
@@ -141,6 +143,14 @@ class UISettingsWindow(QWidget):
             self.font_size_dropdown.addItem(str(size))
         self.font_size_dropdown.setCurrentIndex(0)
 
+    def update_font_size(self):
+        database = QtGui.QFontDatabase()
+
+        self.font_size_dropdown.clear()
+
+        for size in database.smoothSizes(self.font_type_dropdown.currentText(), self.font_style_dropdown.currentText()):
+            self.font_size_dropdown.addItem(str(size))
+        self.font_size_dropdown.setCurrentIndex(0)
 
 
     def update_pref(self):
@@ -167,3 +177,4 @@ class UISettingsWindow(QWidget):
             config.set("DEFAULT", "name_heading", "False")
         with open(CONFIG_FILE, 'w') as configfile:
             config.write(configfile)
+        self.deleteLater()

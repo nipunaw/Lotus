@@ -202,6 +202,7 @@ class MainWindow(QMainWindow):
         self.SettingsWindow.pen_width_updated.connect(set_default_pen_width)
         self.SettingsWindow.eraser_width_updated.connect(set_default_eraser_width)
         self.SettingsWindow.name_updated.connect(self.update_header) # lambda state, x = self.updateSettingsWindow() : self.HubWindow.user_welcome.setText(x)
+        self.SettingsWindow.save_btn.clicked.connect(self.close)
         self.setWindowTitle("Settings")
         self.setCentralWidget(self.SettingsWindow)
 
