@@ -52,8 +52,9 @@ class MainWindow(QMainWindow):
                                  'Pen_Size': '5',
                                  'Eraser_Size': '5',
                                  'Name_Heading': 'True',
-                                 'Default_Font': 'Times New Roman',
-                                 'Default_Font_Size': '10'}
+                                 'Default_Font': 'Sans Serif',
+                                 'Default_Style': 'Normal',
+                                 'Default_Font_Size': '12'}
             config.write(file)
         file.close()
 

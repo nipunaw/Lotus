@@ -59,6 +59,44 @@ class UISettingsWindow(QWidget):
         self.eraser_size_dropdown.addItem("9")
         self.eraser_size_dropdown.setCurrentIndex(int(config['DEFAULT']['eraser_size']) - 5)
 
+        database = QtGui.QFontDatabase()
+
+        self.font_type = QtWidgets.QLabel()
+        self.font_type.setText("Default Font Type: ")
+        self.font_type.setStyleSheet("font-family: Lato")
+        self.font_type_dropdown = QtWidgets.QComboBox()
+        for family in database.families():
+            self.font_type_dropdown.addItem(family)
+        index = self.font_type_dropdown.findText(config['DEFAULT']['default_font'], QtCore.Qt.MatchFixedString)
+        if index >= 0:
+            self.font_type_dropdown.setCurrentIndex(index)
+
+        self.font_type_dropdown.currentIndexChanged.connect(self.update_font_style_size)
+
+        self.font_style = QtWidgets.QLabel()
+        self.font_style.setText("Default Font Style: ")
+        self.font_style.setStyleSheet("font-family: Lato")
+
+        self.font_size = QtWidgets.QLabel()
+        self.font_size.setText("Default Font Size: ")
+        self.font_size.setStyleSheet("font-family: Lato")
+
+        self.font_style_dropdown = QtWidgets.QComboBox()
+        for style in database.styles(self.font_type_dropdown.currentText()):
+            self.font_style_dropdown.addItem(style)
+        index = self.font_style_dropdown.findText(config['DEFAULT']['default_style'], QtCore.Qt.MatchFixedString)
+        if index >= 0:
+            self.font_style_dropdown.setCurrentIndex(index)
+
+        self.font_size_dropdown = QtWidgets.QComboBox()
+        for size in database.smoothSizes(self.font_type_dropdown.currentText(), self.font_style_dropdown.currentText()):
+            self.font_size_dropdown.addItem(str(size))
+        index = self.font_size_dropdown.findText(config['DEFAULT']['default_font_size'], QtCore.Qt.MatchFixedString)
+        if index >= 0:
+            self.font_size_dropdown.setCurrentIndex(index)
+
+
+
         self.heading_default = QtWidgets.QLabel()
         self.heading_default.setText("New notes have name in heading ")
         self.heading_default.setStyleSheet("font-family: Lato")
@@ -78,15 +116,43 @@ class UISettingsWindow(QWidget):
         self.layout.addWidget(self.pen_size_dropdown, 1, 1)
         self.layout.addWidget(self.eraser_size, 2, 0)
         self.layout.addWidget(self.eraser_size_dropdown, 2, 1)
-        self.layout.addWidget(self.heading_default, 3, 0)
-        self.layout.addWidget(self.heading_default_checkbox, 3, 1)
-        self.layout.addWidget(self.save_btn, 4, 1)
+        self.layout.addWidget(self.font_type, 3, 0)
+        self.layout.addWidget(self.font_type_dropdown, 3, 1)
+        self.layout.addWidget(self.font_style, 4, 0)
+        self.layout.addWidget(self.font_style_dropdown, 4, 1)
+        self.layout.addWidget(self.font_size, 5, 0)
+        self.layout.addWidget(self.font_size_dropdown, 5, 1)
+        self.layout.addWidget(self.heading_default, 6, 0)
+        self.layout.addWidget(self.heading_default_checkbox, 6, 1)
+        self.layout.addWidget(self.save_btn, 7, 1)
         self.setLayout(self.layout)
+
+    def update_font_style_size(self):
+        database = QtGui.QFontDatabase()
+
+        self.font_style_dropdown.clear()
+        self.font_size_dropdown.clear()
+
+        for style in database.styles(self.font_type_dropdown.currentText()):
+            self.font_style_dropdown.addItem(style)
+        self.font_style_dropdown.setCurrentIndex(0)
+
+        for size in database.smoothSizes(self.font_type_dropdown.currentText(), self.font_style_dropdown.currentText()):
+            self.font_size_dropdown.addItem(str(size))
+        self.font_size_dropdown.setCurrentIndex(0)
+
+
 
     def update_pref(self):
         config = configparser.ConfigParser()
         config.read(CONFIG_FILE)
         name_update = self.name_edit.text()
+        font_type_update = self.font_type_dropdown.currentText()
+        font_style_update = self.font_style_dropdown.currentText()
+        font_size_update = self.font_size_dropdown.currentText()
+        config.set("DEFAULT", "default_font", font_type_update)
+        config.set("DEFAULT", "default_style", font_style_update)
+        config.set("DEFAULT", "default_font_size", font_size_update)
         config.set("DEFAULT", "name", name_update)
         self.name_updated.emit(name_update)
         pen_width = str(self.pen_size_dropdown.currentText())
