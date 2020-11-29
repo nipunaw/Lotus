@@ -40,13 +40,14 @@ class FloatingWidget(QtWidgets.QWidget):
         self.right_side = False
         self.top_side = False
         self.bottom_side = False
+        self.to_delete = False
 
 
         ## Right-click options
         self.menu = QtWidgets.QMenu(self)
         placeAction = QtWidgets.QAction("Place", self)
         deleteAction = QtWidgets.QAction('Delete', self)
-        deleteAction.triggered.connect(self.deleteLater)
+        deleteAction.triggered.connect(self.deleteWidget) # lambda state, x = self : self.parent().floatingWidgetDelete(x)
         placeAction.triggered.connect(lambda state, x = self : self.parent().floatingWidgetPlace(x))
         self.menu.addAction(placeAction)
         self.menu.addAction(deleteAction)
@@ -57,6 +58,10 @@ class FloatingWidget(QtWidgets.QWidget):
         self.curr_cursor_shape = QtGui.QCursor().shape()
         self.cursor = QtGui.QCursor()
         self.installEventFilter(self)
+
+    def deleteWidget(self):
+        self.to_delete = True
+        self.parent().floatingWidgetDelete(self)
 
     def leaveEvent(self, event):
        self.cursor.setShape(self.curr_cursor_shape)

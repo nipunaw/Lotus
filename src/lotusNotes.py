@@ -424,12 +424,16 @@ class Canvas(QLabel):
         ##self.update()
         self.paintMirrorEvent()
         widget.deleteLater()
+        # widget.to_delete = True
+        # self.floatingWidgetDelete(widget)
         #self.floatingWidgets.remove(widget)
         self.layer_change.emit()
 
     def floatingWidgetDelete(self, widget): ##experimental
-        self.floatingWidgets.remove(widget)
-        widget.deleteLater()
+        for i in range(len(self.floatingWidgets)):
+            if self.floatingWidgets[i].to_delete == True:
+                self.floatingWidgets.pop(i)
+                widget.deleteLater()
 
     def save(self, file_path):
         for i in self.floatingWidgets:
