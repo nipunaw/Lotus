@@ -196,8 +196,15 @@ class UIHelpWindow(QWidget):
         self.helpTextEditor.append('\n')
 
         self.helpTextEditor.append(
-            'The home page will also be updated to display these events on the home page calendar.\n')
+            'The home page will update to display these events on the home page calendar.\n')
         self.insertImageFunc(assets["help_schedule_7"], self.cursor)
+        self.helpTextEditor.append('\n')
+
+        self.helpTextEditor.append(
+            'A date-associated note for each instance of a class/event can be accessed by clicking on it in the home page window as shown below.\n')
+        self.insertImageFunc(assets["help_schedule_8"], self.cursor)
+        self.helpTextEditor.append('\n')
+        self.insertImageFunc(assets["help_schedule_9"], self.cursor)
         self.helpTextEditor.append('\n')
 
         #self.helpTextEditor.append(
