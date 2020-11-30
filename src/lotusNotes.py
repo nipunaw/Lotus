@@ -750,6 +750,21 @@ class UINoteWindow(QWidget):
             #    u.incrementWidth()
             self.canvas_window.label.cursor_update()
 
+    def saveOCRPopup(self):
+        self.save_prompt = QtWidgets.QDialog(self)
+        self.cancellation = False
+        self.non_cancelleation = False
+        self.save_prompt.setWindowTitle("Save your changes?")
+        self.save_prompt.setFixedSize(180, 50)
+        options = QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel
+        self.save_prompt.buttonBox = QtWidgets.QDialogButtonBox(options)
+        self.save_prompt.buttonBox.accepted.connect(self.acceptSave)
+        self.save_prompt.buttonBox.rejected.connect(self.acceptCancel)
+        self.save_prompt.layout = QtWidgets.QVBoxLayout()
+        self.save_prompt.layout.addWidget(self.save_prompt.buttonBox)
+        self.save_prompt.setLayout(self.save_prompt.layout)
+        self.save_prompt.exec_()
+
     def savePopup(self):
         self.save_prompt = QtWidgets.QDialog(self)
         self.cancellation = False
@@ -1223,7 +1238,7 @@ class UINoteWindow(QWidget):
 
     def ocr(self):
         if self.canvas_window.label.hasChanged() or self.file_path == "":
-            self.savePopup()
+            self.saveOCRPopup()
         if not self.canvas_window.label.hasChanged():
             # image pre-processing
             img = cv2.imread(self.file_path, cv2.IMREAD_GRAYSCALE)  # grayscales image
