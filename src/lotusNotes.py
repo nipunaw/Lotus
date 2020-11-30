@@ -655,34 +655,6 @@ class UINoteWindow(QWidget):
         self.canvas_window.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.layout = QVBoxLayout()
 
-        # self.heading_title = QtWidgets.QLineEdit()
-        # title_font = QtGui.QFont("Times New Roman", 20)
-        # self.heading_title.setFont(title_font)
-        # self.heading_title.setStyleSheet("border: 0px")
-        # self.layout.addWidget(self.heading_title)
-        #
-        # subheading_font = QtGui.QFont("Times New Roman", 15)
-        # self.heading_name = QtWidgets.QLineEdit()
-        # self.heading_name.setFont(subheading_font)
-        # self.heading_name.setStyleSheet("border: 0px")
-        # self.layout.addWidget(self.heading_name)
-        #
-        # self.heading_course = QtWidgets.QLineEdit()
-        # self.heading_course.setFont(subheading_font)
-        # self.heading_course.setStyleSheet("border: 0px")
-        # self.layout.addWidget(self.heading_course)
-        #
-        # self.heading_date = QtWidgets.QLineEdit()
-        # self.heading_date.setFont(subheading_font)
-        # self.heading_date.setStyleSheet("border: 0px")
-        # self.layout.addWidget(self.heading_date)
-
-        self.header_text = QtWidgets.QPlainTextEdit()
-        self.header_widget = FloatingWidget(self.header_text, self.canvas_window.label, True)
-        self.header_widget.is_heading = True
-        self.canvas_window.label.floatingWidgets.append(self.header_widget)
-        self.header_widget.hide()
-
         self.layout.setContentsMargins(0,0,0,0)
         self.layout.setSpacing(0)
         self.layout.setAlignment(Qt.AlignTop)
@@ -1058,22 +1030,19 @@ class UINoteWindow(QWidget):
                 max_len = len(date_str)
             height = height + 1
         composed_heading = composed_heading.rstrip("\n")
-
         text = QtWidgets.QPlainTextEdit(composed_heading)
-        print(self.font.styleName())
         text.setFont(self.font)
-
-        xlen = (max_len+4)*self.font.pointSize()
-        ylen = height*self.font.pointSize()*2
+        xlen = (max_len+6)*self.font.pointSize()
+        ylen = height*self.font.pointSize()*2 + 6
         text.setGeometry(0, 0, xlen, ylen)
         text.setFixedHeight(ylen)
-
         for i in range(len(self.canvas_window.label.floatingWidgets)):
             if self.canvas_window.label.floatingWidgets[i].is_heading:
                 self.canvas_window.label.floatingWidgets[i].to_delete = True
                 self.canvas_window.label.floatingWidgetDelete(self.canvas_window.label.floatingWidgets[i])
                 break
-
+        text.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        text.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         header_widget = FloatingWidget(text, self.canvas_window.label, 0, 0, True)
         header_widget.is_heading = True
         self.canvas_window.label.floatingWidgets.append(header_widget)
