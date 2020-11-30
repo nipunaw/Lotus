@@ -90,18 +90,6 @@ class UIPreviousWindow(QWidget):
                 self.class_layouts_scrolls[event_name].setWidget(self.class_layouts_containers[event_name])
                 self.parent_layout.addWidget(self.class_layouts_scrolls[event_name])
 
-        # for b in data:
-        #     self.name_classes.append(b['name'])
-        #     self.class_layouts_containers[b['name']] = QWidget()
-        #     self.class_layouts[b['name']] = QtWidgets.QVBoxLayout(self)
-        #     self.class_layouts_containers[b['name']].setLayout(self.class_layouts[b['name']])
-        #     self.class_layouts_scrolls[b['name']] = QtWidgets.QScrollArea()
-        #     self.class_layouts_scrolls[b['name']].setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        #     self.class_layouts_scrolls[b['name']].setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        #     self.class_layouts_scrolls[b['name']].setWidgetResizable(True)
-        #     self.class_layouts_scrolls[b['name']].setWidget(self.class_layouts_containers[b['name']])
-        #     self.parent_layout.addWidget(self.class_layouts_scrolls[b['name']])
-
         self.home_ui()
         self.note_buttons()
 

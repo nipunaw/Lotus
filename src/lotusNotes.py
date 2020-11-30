@@ -181,6 +181,8 @@ class Canvas(QLabel):
             self.inactiveLayers[i] = QtGui.QPixmap(size)
             self.inactiveLayers[i].fill(Qt.transparent)
             self.layer_painter.begin(self.inactiveLayers[i])
+        self.layer_painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+        self.layer_painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
         self.layer_painter.drawPixmap(temp.rect(), temp, temp.rect())
         self.layer_painter.end()
 
@@ -217,8 +219,7 @@ class Canvas(QLabel):
             self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
             self.painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
             self.painter.setPen(self.current_utensil.pen())
-            #self.painter.drawPoint(event.pos())
-
+            self.painter.drawPoint(event.pos())
 
             self.activeLayers.append(new_canvas_layer)
             self.inactiveLayers.clear()
@@ -227,7 +228,6 @@ class Canvas(QLabel):
             self.layer_change.emit()
 
             self.last_point_draw = event.pos()
-            ##self.update()
             self.painter.end()
         elif event.button() == Qt.MiddleButton:
             self.setCursor(Qt.ClosedHandCursor)
@@ -257,7 +257,6 @@ class Canvas(QLabel):
             if not self.current_utensil == Utensils.HIGHLIGHTER:
                 self.painter.drawLine(self.last_point_draw, event.pos())
                 self.last_point_draw = event.pos()
-            ##self.update()
             self.paintMirrorEvent()
             self.painter.end()
         elif event.buttons() and Qt.MiddleButton and self.mouse_button_scrolling:
@@ -286,95 +285,6 @@ class Canvas(QLabel):
             self.cursor_update()
             self.mouse_button_scrolling = False
 
-
-    # def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
-    #     if event.button() == Qt.LeftButton:
-    #         self.utensil_press = True
-    #         # self.numLayers += 1
-    #         new_canvas_layer = QtGui.QPixmap(self.size())
-    #         new_canvas_layer.fill(Qt.transparent)
-    #
-    #         #self.painter.begin(new_canvas_layer)
-    #         #self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-    #         #self.painter.setPen(self.current_utensil.pen())
-    #
-    #         #self.drawing_path_part = QtGui.QPainterPath()
-    #         # drawing_path = QtGui.QPainterPath()
-    #         # drawing_path.moveTo(event.pos())
-    #         self.drawing_path_part = QtGui.QPainterPath()
-    #         self.drawing_path_part.moveTo(event.pos())
-    #         # self.drawing_path_layers.append(drawing_path)
-    #
-    #         #self.painter.drawPoint(event.pos())
-    #
-    #         self.activeLayers.append(new_canvas_layer)
-    #         self.last_point_draw = event.pos()
-    #         self.update()
-    #         # self.painter.end()
-    #     elif event.button() == Qt.MiddleButton:
-    #         self.setCursor(Qt.ClosedHandCursor)
-    #         self.last_point_scroll = event.globalPos()
-    #         self.mouse_button_scrolling = True
-    #     else:
-    #         super(Canvas, self).mousePressEvent(event)
-    #
-    # def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
-    #     if event.buttons() and Qt.LeftButton and self.utensil_press:
-    #         x = self.width() - event.pos().x()
-    #         y = self.height() - event.pos().y()
-    #         if x < 200:
-    #             if y < 200:
-    #                 self.resizeLayer(-1, QSize(self.width() + 100, self.height() + 100))
-    #                 self.resizeCanvas(QSize(self.width() + 100, self.height()))
-    #             else:
-    #                 self.resizeLayer(-1, QSize(self.width() + 100, self.height()))
-    #                 self.resizeCanvas(QSize(self.width() + 100, self.height()))
-    #         elif y < 200:
-    #             self.resizeLayer(-1, QSize(self.width(), self.height() + 100))
-    #             self.resizeCanvas(QSize(self.width(), self.height() + 100))
-    #         #self.painter.begin(self.activeLayers[len(self.activeLayers) - 1])
-    #         #self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-    #
-    #         #self.painter.setPen(self.current_utensil.pen())
-    #         # self.painter.drawLine(self.last_point_draw, event.pos())
-    #         #self.drawing_path_part.closeSubpath()
-    #         self.drawing_path_part.lineTo(event.pos())
-    #         self.painter.begin(self.activeLayers[len(self.activeLayers) - 1])
-    #         #self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-    #         self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-    #         self.painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
-    #         self.painter.setPen(self.current_utensil.pen())
-    #         #self.drawing_path_layers[len(self.drawing_path_layers)-1].addPath(self.drawing_path_part)
-    #         self.painter.drawPath(self.drawing_path_part) #self.drawing_path_layers[len(self.drawing_path_layers)-1]
-    #         #self.drawing_path_part.moveTo(event.pos())
-    #         # self.drawingPath = None
-    #         self.update()
-    #         self.painter.end()
-    #
-    #         # self.last_point_draw = event.pos()
-    #         # self.update()
-    #         #self.painter.end()
-    #     elif event.buttons() and Qt.MiddleButton and self.mouse_button_scrolling:
-    #         offset = self.last_point_scroll - event.globalPos()
-    #         self.last_point_scroll = event.globalPos()
-    #         self.mouse_grab.emit(offset)
-    #     else:
-    #         super(Canvas, self).mouseMoveEvent(event)
-    #
-    # def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
-    #     if event.button() == Qt.LeftButton:
-    #         self.utensil_press = False
-    #         # self.painter.begin(self.activeLayers[len(self.activeLayers) - 1])
-    #         # self.painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-    #         # self.painter.setPen(self.current_utensil.pen())
-    #         # self.painter.drawPath(self.drawingPath)
-    #         # #self.drawingPath = None
-    #         # self.update()
-    #         # self.painter.end()
-    #     elif event.button() == Qt.MiddleButton:
-    #         self.setCursor(self.cursor)
-    #         self.mouse_button_scrolling = False
-
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         self.scrolled.emit(event)
 
@@ -382,44 +292,17 @@ class Canvas(QLabel):
         self.layer_painter.begin(self.activeLayers[0])
         self.layer_painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
         self.layer_painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
-        # print(len(self.activeLayers))
-        self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[len(self.activeLayers) - 1])
-        # for i in range(1, len(self.activeLayers)):
-        #    self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[i])
+        self.layer_painter.drawPixmap(self.activeLayers[len(self.activeLayers) - 1].rect(), self.activeLayers[len(self.activeLayers) - 1], self.activeLayers[len(self.activeLayers) - 1].rect())
         self.layer_painter.end()
         self.setPixmap(self.activeLayers[0])
-
-    # def paintEvent(self, event):
-    #     #self.activeLayers[0].fill(Qt.white)
-    #     self.layer_painter.begin(self.activeLayers[0])
-    #     self.layer_painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-    #     self.layer_painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
-    #     #print(len(self.activeLayers))
-    #     self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[len(self.activeLayers)-1])
-    #     #for i in range(1, len(self.activeLayers)):
-    #     #    self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[i])
-    #     self.layer_painter.end()
-    #     self.setPixmap(self.activeLayers[0])
-    #     super(Canvas, self).paintEvent(event)
-
-    # def paintEvent(self, event):
-    #     self.activeLayers[0].fill(Qt.white)
-    #     self.layer_painter.begin(self.activeLayers[0])
-    #     self.layer_painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
-    #     self.layer_painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
-    #     for i in range(1, len(self.activeLayers)):
-    #         self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[i])
-    #     self.layer_painter.end()
-    #     self.setPixmap(self.activeLayers[0])
-    #     super(Canvas, self).paintEvent(event)
 
     def hasChanged(self):
         if self.last_save is None:
             return False
         if len(self.floatingWidgets) > 0:
             return True
-        # elif len(self.floatingWidgets) == 1 and not self.floatingWidgets[0].is_heading:
-        #     return True
+        if len(self.activeLayers) == 1:
+            return False
         return not self.pixmap().toImage() == self.last_save
 
     def floatingWidgetPlace(self, widget):
@@ -460,12 +343,12 @@ class Canvas(QLabel):
     # Button click handling
     def clear(self):
         # Reset canvas
-        clear_canvas_layer = QtGui.QPixmap(self.size())
+        clear_canvas_layer = QtGui.QPixmap(self.activeLayers[0].size())
         clear_canvas_layer.fill(Qt.white)
         self.activeLayers.append(clear_canvas_layer)
         self.inactiveLayers.clear()
         self.paintMirrorEvent()
-        self.resizeCanvas(self.startSize)
+        # self.resizeCanvas(self.startSize)
         self.layer_change.emit()
         # Reset back to pen tool (done outside)
         # self.setUtensil(Utensils.PEN)
@@ -476,7 +359,7 @@ class Canvas(QLabel):
         self.layer_painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
         self.layer_painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform, True)
         for i in range(1, len(self.activeLayers)):
-            self.layer_painter.drawPixmap(self.activeLayers[0].rect(), self.activeLayers[i])
+            self.layer_painter.drawPixmap(self.activeLayers[i].rect(), self.activeLayers[i], self.activeLayers[i].rect())
         self.layer_painter.end()
         self.setPixmap(self.activeLayers[0])
 
@@ -485,7 +368,7 @@ class Canvas(QLabel):
         if len(self.activeLayers) > 1:
             self.inactiveLayers.append(self.activeLayers.pop())
             self.change_master_layer()
-            self.paintMirrorEvent()
+            # self.paintMirrorEvent()
             self.layer_change.emit()
 
     def redo(self): # Now finishing command pattern
@@ -702,7 +585,6 @@ class UINoteWindow(QWidget):
             else:
                 event.ignore()
 
-
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         if event.key() == Qt.Key_BracketLeft:
             self.canvas_window.label.current_utensil.decrementWidth()
@@ -714,6 +596,10 @@ class UINoteWindow(QWidget):
             #for u in Utensils:
             #    u.incrementWidth()
             self.canvas_window.label.cursor_update()
+        elif event.key() == Qt.Key_Z and event.modifiers() == Qt.ControlModifier:
+            self.canvas_window.label.undo()
+        elif event.key() == Qt.Key_Y and event.modifiers() == Qt.ControlModifier:
+            self.canvas_window.label.redo()
 
     def saveOCRPopup(self):
         self.save_prompt = QtWidgets.QDialog(self)

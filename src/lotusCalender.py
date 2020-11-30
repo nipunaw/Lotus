@@ -367,11 +367,13 @@ class ScheduleCalendar(QCalendarWidget):
         blocks.sort(key = lambda x: x["time"]["hour"])
         for block in blocks:
             color = block["color"]
-            painter.setBrush(to_qcolor(color))
-            atop = rect.top() + ((blocks.index(block) / len(blocks)) * (rect.height()))
-            height = rect.height() / len(blocks)
-            block_rect = QRectF(rect.left(), atop, rect.width(), height)
-            painter.setPen(Qt.NoPen)
+            qcolor = to_qcolor(color)
+            painter.setBrush(qcolor)
+            len_float = float(len(blocks))
+            atop = rect.top() + ((blocks.index(block) / len_float) * (rect.height()))
+            height = rect.height() / len_float
+            block_rect = QRectF(rect.left()+1, atop+1, rect.width()-3, height-3)
+            painter.setPen(Qt.NoPen if qcolor != Qt.white else Qt.lightGray)
             painter.drawRect(block_rect)
         painter.setPen(QPen())
         # noinspection PyCallingNonCallable

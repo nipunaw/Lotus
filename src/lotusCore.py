@@ -93,24 +93,6 @@ class MainWindow(QMainWindow):
         else:
             self.HubWindow.setHidden(True)
 
-            # Switching focus doesn't work well in X11 apps
-
-            #print("Should switch focus")
-            #self.HubWindow.showNormal()
-            #self.HubWindow.raise_()
-            #self.HubWindow.activateWindow()
-            #self.HubWindow.setFocusPolicy(QtCore.Qt.StrongFocus)
-            #print(self.HubWindow.isActiveWindow())
-            #self.HubWindow.setWindowFlags(self.HubWindow.windowFlags() & QtCore.Qt.WindowStaysOnTopHint)  # set always on top flag, makes window disappear
-            #self.HubWindow.update() # makes window reappear, but it's ALWAYS on top
-            #self.HubWindow.setWindowFlags(self.HubWindow.windowFlags() & ~QtCore.Qt.WindowStaysOnTopHint)  # clear always on top flag, makes window disappear
-            #self.HubWindow.update()
-            #self.HubWindow.setFocus(True)
-            #self.HubWindow.setWindowState(self.HubWindow.windowState() & QtCore.Qt.WindowActive)
-            #self.activateWindow()
-            #self.raise_()
-
-
     def NoteWindowSeparate(self, file_path=None, scheduled=False, event_name=None, event_date=None, event_time=None):
         window = UINoteWindow(self.schedule, file_path=file_path, scheduled=scheduled)
         self.newNotes.append(window)
@@ -130,57 +112,15 @@ class MainWindow(QMainWindow):
         self.newNotes[self.newNoteCount].show()
         self.newNoteCount += 1
 
-    # def startHubWindow(self):
-    #     self.HubWindow = UIHubWindow(self)
-    #     self.setFixedSize(800, 500)
-    #     self.setWindowTitle("Lotus Home")
-    #     self.setCentralWidget(self.HubWindow)
-    #
-    #     ########### Background color ###########
-    #     p = self.HubWindow.palette()
-    #     p.setColor(self.HubWindow.backgroundRole(), QtGui.QColor(Qt.white))
-    #     self.setPalette(p)
-    #
-    #     ########### Button handling ###########
-    #     self.HubWindow.new_note_button.clicked.connect(self.NoteWindowSeparate)
-    #     self.show()
-    #
-
-    # def startNoteWindow(self, directory):
-    #     if directory is not None:
-    #         directory = directory[:-1]
-    #     self.NoteWindow = UINoteWindow(self, directory)
-    #     self.setWindowTitle("Lotus Notes")
-    #     self.setCentralWidget(self.NoteWindow)
-    #
-    #     ########### Background color ###########
-    #     p = self.NoteWindow.palette()
-    #     p.setColor(self.NoteWindow.backgroundRole(), Qt.white)
-    #     self.setPalette(p)
-    #
-    #     ########### Button handling ###########
-    #     self.NoteWindow.go_back_button.clicked.connect(self.startHubWindow)
-    #     self.show()
-
     def startPreviousWindow(self):
         self.PreviousWindow = UIPreviousWindow(self.schedule, set_paths=False)
         self.PreviousWindow.setFixedSize(650, 400)
         self.PreviousWindow.setWindowTitle("Previous Notes")
-
-
-        #self.setCentralWidget(self.PreviousWindow)
-
-        ########### Background color ###########
-        # p = self.PreviousWindow.palette()
-        # p.setColor(self.PreviousWindow.backgroundRole(), Qt.white)
-        # self.setPalette(p)
-
         ########### Button handling ###########
         for i in range(len(self.PreviousWindow.directories)):
              try:
-                 # self.PreviousWindow.buttons[self.PreviousWindow.directories[i]].clicked.connect(
-                 #     lambda state, x=self.PreviousWindow.directories[i]: self.NoteWindowSeparate(x))
-                 self.PreviousWindow.buttons[self.PreviousWindow.directories[i]].clicked.connect(
+                 button = self.PreviousWindow.buttons[self.PreviousWindow.directories[i]]
+                 button.clicked.connect(
                      lambda state, x=self.PreviousWindow.directories[i]: self.NoteWindowSeparate(file_path=x))
                  self.PreviousWindow.other_buttons[self.PreviousWindow.directories[i]].clicked.connect(
                         lambda state, x=self.PreviousWindow.directories[i]: self.NoteWindowSeparate(x))
@@ -225,14 +165,7 @@ class MainWindow(QMainWindow):
         self.HelpWindow.setWindowTitle("Help Page")
         #self.setCentralWidget(self.HelpWindow)
         self.HelpWindow.setFixedSize(800, 500)
-
-        # ########### Background color ###########
-        # p = self.HelpWindow.palette()
-        # p.setColor(self.HelpWindow.backgroundRole(), Qt.white)
-        # self.setPalette(p)
-
         self.HelpWindow.show()
-
 
     def connectCalendarWindowButtons(self, buttons : list):
         for (button, cls, date) in buttons:

@@ -132,9 +132,7 @@ class UpcomingClasses(QWidget):
         if self.scope == 0:
             widget = QWidget(self)
             widget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-
             button_layout = QtWidgets.QVBoxLayout()
-
             button_layout.setSpacing(10)
             button_layout.setContentsMargins(10, 10, 10, 10)
             button_layout.setAlignment(Qt.AlignTop | Qt.AlignVCenter)
@@ -144,7 +142,7 @@ class UpcomingClasses(QWidget):
             scroll_area.setWidget(widget)
             scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
             scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-            scroll_area.setLineWidth(0)
+            scroll_area.setFrameShape(QtWidgets.QScrollArea.NoFrame)
 
             buttons = self.schedule.get_event_buttons(self.viewing_date)
             if len(buttons) == 0:
@@ -166,7 +164,7 @@ class UpcomingClasses(QWidget):
             scroll_area.setWidget(widget)
             scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
             scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-            scroll_area.setLineWidth(0)
+            scroll_area.setFrameShape(QtWidgets.QScrollArea.NoFrame)
             start_date, end_date = self.get_first_and_last_day_of_week(self.viewing_date)
             week = []
             while start_date <= end_date:
