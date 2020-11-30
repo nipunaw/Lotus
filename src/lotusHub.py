@@ -236,6 +236,7 @@ class UIHubWindow(QWidget):
         self.schedule_button = CircleButton(assets["schedule"], assets["scheduleDarker"])
         self.previous_notes_button = CircleButton(assets["previousNotes"], assets["previousNotesDarker"])
         self.settings_button = CircleButton(assets["settings"], assets["settings_darker"], 20, 20)
+        self.help_button = CircleButton(assets["help"], assets["help_darker"], 20, 20)
 
     def menu_ui(self):
         self.menu_background = QtWidgets.QLabel(self)
@@ -384,6 +385,7 @@ class UIHubWindow(QWidget):
         self.user_welcome.setStyleSheet("font-family: Lato")
         menu_bar_layout.addWidget(self.logo_black)
         menu_bar_layout.addWidget(self.user_welcome, Qt.AlignCenter)
+        menu_bar_layout.addWidget(self.help_button, Qt.AlignRight)
         menu_bar_layout.addWidget(self.settings_button, Qt.AlignRight)
         menu_bar.setLayout(menu_bar_layout)
 

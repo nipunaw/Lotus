@@ -7,6 +7,8 @@
 # Spencer Bass
 
 ########### WSL import ###########
+from PyQt5.QtGui import QTextCursor
+
 import src.wsl
 ########### PyQT5 imports ###########
 import sys
@@ -20,6 +22,7 @@ from src.lotusNotes import UINoteWindow, set_default_eraser_width, set_default_p
 from src.lotusPrevious import UIPreviousWindow
 from src.lotusCalender import UICalendarWindow, Schedule
 from src.lotusSettings import UISettingsWindow
+from src.lotusHelp import UIHelpWindow
 from src.constants import CONFIG_FILE, SCHEDULED_NOTES_DIRECTORY
 ########### Other imports ###########
 import os
@@ -82,6 +85,7 @@ class MainWindow(QMainWindow):
                 lambda state, x=self.schedule: self.startCalenderWindow(self.schedule))
             self.HubWindow.previous_notes_button.clicked.connect(self.startPreviousWindow)
             self.HubWindow.settings_button.clicked.connect(self.startSettingsWindow)
+            self.HubWindow.help_button.clicked.connect(self.startHelpWindow)
             self.HubWindow.show()
 
         elif self.HubWindow.isHidden():
@@ -215,6 +219,20 @@ class MainWindow(QMainWindow):
         self.SettingsWindow.setPalette(p)
 
         self.SettingsWindow.show()
+
+    def startHelpWindow(self):
+        self.HelpWindow = UIHelpWindow()
+        self.HelpWindow.setWindowTitle("Help Page")
+        #self.setCentralWidget(self.HelpWindow)
+        self.HelpWindow.setFixedSize(800, 500)
+
+        # ########### Background color ###########
+        # p = self.HelpWindow.palette()
+        # p.setColor(self.HelpWindow.backgroundRole(), Qt.white)
+        # self.setPalette(p)
+
+        self.HelpWindow.show()
+
 
     def connectCalendarWindowButtons(self, buttons : list):
         for (button, cls, date) in buttons:
