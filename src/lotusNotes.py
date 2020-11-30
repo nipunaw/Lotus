@@ -1038,8 +1038,8 @@ class UINoteWindow(QWidget):
         composed_heading = composed_heading.rstrip("\n")
         text = QtWidgets.QPlainTextEdit(composed_heading)
         text.setFont(self.font)
-        xlen = (max_len+6)*self.font.pointSize()
-        ylen = height*self.font.pointSize()*2 + 6
+        xlen = (max_len+4)*self.font.pointSize()
+        ylen = height*self.font.pointSize()*2 + 2
         text.setGeometry(0, 0, xlen, ylen)
         text.setFixedHeight(ylen)
         for i in range(len(self.canvas_window.label.floatingWidgets)):
@@ -1049,7 +1049,7 @@ class UINoteWindow(QWidget):
                 break
         text.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         text.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        header_widget = FloatingWidget(text, self.canvas_window.label, 0, 0, True)
+        header_widget = FloatingWidget(text, self.canvas_window.label, 0, 0, True, 24)
         header_widget.is_heading = True
         self.canvas_window.label.floatingWidgets.append(header_widget)
         header_widget.show()
@@ -1092,7 +1092,9 @@ class UINoteWindow(QWidget):
         table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         table.setFixedSize(table.horizontalHeader().length() + table.verticalHeader().width(),
                                         table.verticalHeader().length() + table.horizontalHeader().height())
-        table_widget = FloatingWidget(table, self.canvas_window.label, 10, 10)
+        stylesheet = "::section{Background-color:rgb(255,255,255)}"
+        table.setStyleSheet(stylesheet)
+        table_widget = FloatingWidget(table, self.canvas_window.label, 10, 10, False, 24)
         self.canvas_window.label.floatingWidgets.append(table_widget)
         table_widget.show()
         dialog.close()
@@ -1109,7 +1111,7 @@ class UINoteWindow(QWidget):
         image_label = QLabel()
         image_label.setPixmap(image)
         image_label.setGeometry(0, 0, width, height)
-        image_widget = FloatingWidget(image_label, self.canvas_window.label, 10, 10, True)
+        image_widget = FloatingWidget(image_label, self.canvas_window.label, 10, 10, False)
         self.canvas_window.label.floatingWidgets.append(image_widget)
         image_widget.show()
         self.update()
@@ -1119,7 +1121,7 @@ class UINoteWindow(QWidget):
         caption = QtWidgets.QLineEdit()
         caption.setGeometry(0,0,160,20)
         caption.setFixedHeight(20)
-        caption_widget = FloatingWidget(caption, self.canvas_window.label, 10, 10, True)
+        caption_widget = FloatingWidget(caption, self.canvas_window.label, 10, 10, True, 24)
         self.canvas_window.label.floatingWidgets.append(caption_widget)
         caption_widget.child_widget.setFont(self.font)
         caption_widget.show()
