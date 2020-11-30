@@ -51,5 +51,7 @@ assets = {
     "help_schedule_3": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_schedule_3.jpg'),
     "help_schedule_4": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_schedule_4.jpg'),
     "help_schedule_5": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_schedule_5.jpg'),
-    "help_schedule_6": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_schedule_6.jpg')
+    "help_schedule_6": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_schedule_6.jpg'),
+    "help_schedule_7": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_schedule_7.jpg')
+
 }

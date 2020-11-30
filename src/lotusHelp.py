@@ -154,7 +154,7 @@ class UIHelpWindow(QWidget):
             'By clicking under associated tab, you will see previews of any related prior notes, which can be clicked on to re-open it as editable in the notes editing window.\n')
         self.insertImageFunc(assets["help_previous_notes_2"], self.cursor)
         self.helpTextEditor.append('\n')
-        
+
         # Schedule Section
         self.helpTextEditor.setCurrentFont(QFont('Lato'))
         self.helpTextEditor.setFontUnderline(True)
@@ -166,37 +166,38 @@ class UIHelpWindow(QWidget):
         self.helpTextEditor.setFontPointSize(10)
         self.helpTextEditor.append('\n')
         self.helpTextEditor.append(
-            'By clicking on the Schedule button, the calendar window is displayed. As a new user, the calendar will have no populated events. You can add a new class by clicking the Add Scheduled Notes button.\n')
+            'By clicking on the Schedule button, the schedule window is displayed. As a new user, the schedule will have no populated items. You can add a new class or event by clicking the Add New Scheduled Notes button.\n')
         self.insertImageFunc(assets["help_schedule_1"], self.cursor)
         self.helpTextEditor.append('\n')
 
         self.helpTextEditor.append(
-            'Once clicked, a new window will appear where you can fill in important details about this class.\n')
+            'Once clicked, a new window will appear where you can fill in important details.\n')
         self.insertImageFunc(assets["help_schedule_2"], self.cursor)
         self.helpTextEditor.append('\n')
 
         self.helpTextEditor.append(
-            'Once it is saved, this new class will appear in the calendar.\n')
+            'You can choose whether this will be a class, or an event (one-time, recurring, or class).\n')
         self.insertImageFunc(assets["help_schedule_3"], self.cursor)
         self.helpTextEditor.append('\n')
 
         self.helpTextEditor.append(
-            'By clicking on a specific day, that day\'s class events will be displayed.\n')
+            'You will also have to fill in other details, such as the name, dates, and color. An example class is shown below.\n')
         self.insertImageFunc(assets["help_schedule_4"], self.cursor)
         self.helpTextEditor.append('\n')
 
         self.helpTextEditor.append(
-            'In this case, when December 2nd is clicked as above, the Example Class for December 2nd is displayed. By clicking on the notes, a new notes page is opened.\n')
+            'Once saved, the new item will appear in the schedule. \n')
         self.insertImageFunc(assets["help_schedule_5"], self.cursor)
         self.helpTextEditor.append('\n')
+
+        self.helpTextEditor.append(
+            'Here is an example of what a class, single event, recurring event, and a class event will look like in the schedule window.\n')
         self.insertImageFunc(assets["help_schedule_6"], self.cursor)
         self.helpTextEditor.append('\n')
 
         self.helpTextEditor.append(
-            'Once you finish writing your notes and save them, they will be available to review or edit by clicking on the day and class event as before.\n')
-        self.insertImageFunc(assets["help_schedule_4"], self.cursor)
-        self.helpTextEditor.append('\n')
-        self.insertImageFunc(assets["help_schedule_5"], self.cursor)
+            'The home page will also be updated to display these events on the home page calendar.\n')
+        self.insertImageFunc(assets["help_schedule_7"], self.cursor)
         self.helpTextEditor.append('\n')
 
         #self.helpTextEditor.append(
