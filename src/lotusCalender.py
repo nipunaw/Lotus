@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QPushButton, QWidget, QDialogButtonBox, QVBoxLayout,
     QCalendarWidget, QStackedWidget, QColorDialog, QSizePolicy, QSpacerItem, QGridLayout, QCheckBox, QMenu, QAction
 
 from src.constants import SCHEDULE_FILE_PATH
-from src.lotusUtils import clear_layout
+from src.lotusUtils import clear_layout, clear_grid, camel_case
 
 DAYS = ["M", "T", "W", "R", "F", "Sa", "Su"]
 
@@ -96,12 +96,11 @@ class Schedule(QObject):
                             time = to_qtime(b["time"])
                             button = self.get_event_button(event_name, time, include_times)
                             buttons.append((button, event_name, date, time))
-            else:
-                pass
-                # if to_qdate(data["date"]) == date:
-                #     time = to_qtime(data["time"])
-                #     button = self.get_event_button(event_name, time, include_times)
-                #     buttons.append((button, event_name, date, time))
+            elif data["type"] in ["one time class event", "one time event"]:
+                if to_qdate(data["date"]) == date:
+                    time = to_qtime(data["time"])
+                    button = self.get_event_button(event_name, time, include_times)
+                    buttons.append((button, event_name, date, time))
         self.connect_buttons.emit(buttons)
         return buttons
 
@@ -120,8 +119,18 @@ class Schedule(QObject):
         data.pop("name")
         self._schedule[event_name] = data
         self.schedule = self._schedule
-        return True
 
+    def delete_event(self, event_name:str):
+        deleted_data = self._schedule[event_name]
+        to_delete = [event_name]
+        if deleted_data["type"] == "class":
+            for name, data in self._schedule.items():
+                if data["type"] == "one time class event":
+                    if data["class_name"] == event_name:
+                        to_delete.append(name)
+        for name in to_delete:
+            self._schedule.pop(name)
+        self.schedule = self._schedule
 
 class UICalendarWindow(QWidget):
     def __init__(self, schedule:Schedule, parent=None):
@@ -129,18 +138,19 @@ class UICalendarWindow(QWidget):
 
         self.schedule = schedule
 
+        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.layout = QtWidgets.QGridLayout()
 
         self.bottom_left_layout = QtWidgets.QVBoxLayout()
 
         self.schedule_table = ScheduleTable(self.schedule)
-        self.schedule.updated.connect(self.schedule_table.update_table)
+        self.schedule.updated.connect(self.update_table)
 
-        self.layout.addWidget(self.schedule_table)
+        self.layout.addWidget(self.schedule_table, 0, 0)
 
         self.add_schedule_button = QPushButton("Add New Scheduled Notes")
         self.add_schedule_button.clicked.connect(self.add_notes)
-        self.layout.addWidget(self.add_schedule_button)
+        self.layout.addWidget(self.add_schedule_button, 1, 0)
 
         self.setLayout(self.layout)
         self.show()
@@ -152,52 +162,139 @@ class UICalendarWindow(QWidget):
             data = popup.get_data()
             self.schedule.add_event(data)
 
+    def update_table(self):
+        self.layout.removeWidget(self.schedule_table)
+        new_table = ScheduleTable(self.schedule)
+        self.schedule_table.deleteLater()
+        self.schedule_table = new_table
+        self.layout.addWidget(self.schedule_table, 0, 0)
+        self.adjustSize()
+
 class ScheduleTable(QWidget):
     def __init__(self, schedule:Schedule):
         super(ScheduleTable, self).__init__()
         self.schedule = schedule
-        self.schedule.updated.connect(self.update_table)
-        self.grid_layout = None
-        self.update_table()
+        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.class_grid_layout = QtWidgets.QGridLayout()
+        self.class_grid_layout.setVerticalSpacing(5)
+        self.class_grid_layout.setHorizontalSpacing(10)
+        self.class_grid_layout.setContentsMargins(0, 0, 0, 2 * self.class_grid_layout.verticalSpacing())
 
-    def edit_class(self, data):
-        popup = Popup(self.schedule, data=data)
+        self.event_grid_layout = QtWidgets.QGridLayout()
+        self.event_grid_layout.setVerticalSpacing(5)
+        self.event_grid_layout.setHorizontalSpacing(10)
+        self.event_grid_layout.setContentsMargins(0, 0, 0, self.event_grid_layout.verticalSpacing())
+
+        self.add_layout_headers()
+
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        classes_label = QLabel("Scheduled Classes", self)
+        self.layout.addWidget(classes_label, alignment=Qt.AlignCenter)
+        self.layout.addItem(self.class_grid_layout)
+        events_label = QLabel("Scheduled Events", self)
+        self.layout.addWidget(events_label, alignment=Qt.AlignCenter)
+        self.layout.addItem(self.event_grid_layout)
+
+        self.setLayout(self.layout)
+        self.initialize_layout()
+
+    def edit_event(self, event_name:str, data:dict):
+        popup = Popup(self.schedule, edit_data=(event_name, data))
         popup.exec_()
 
-    def update_table(self):
-        if self.grid_layout is not None:
-            pass
-        self.grid_layout = QtWidgets.QGridLayout()
-        self.setLayout(self.grid_layout)
-        headers = ["Class", "Block(s)"]
-        for i in range(0, len(headers)):
-            header_label = QLabel(headers[i])
+    def get_edit_button(self, event_name:str, data:dict):
+        if data is None:
+            return None
+        button = QPushButton(event_name, self)
+        button.setStyleSheet(self.schedule.get_event_stylesheet(event_name))
+        button.clicked.connect(lambda state, x=event_name, y=data: self.edit_event(x, y))
+        return button
+
+    def add_layout_headers(self):
+        class_layout_headers = ["Class Name", "Block(s)", "Event(s)"]
+        for i in range(0, len(class_layout_headers)):
+            header_label = QLabel(class_layout_headers[i])
             header_label.setAlignment(Qt.AlignLeft)
-            self.grid_layout.addWidget(header_label, 0, i)
+            self.class_grid_layout.addWidget(header_label, 0, i)
+
+        event_layout_headers = ["Event Name", "Time(s)", "Type"]
+        for i in range(0, len(event_layout_headers)):
+            header_label = QLabel(event_layout_headers[i])
+            header_label.setAlignment(Qt.AlignLeft)
+            self.event_grid_layout.addWidget(header_label, 0, i)
+
+    def get_events_by_type(self):
+        classes = []
+        events = []
+        for (event_name, data) in self.schedule.schedule.items():
+            event_type = data["type"]
+            if event_type == "class":
+                classes.append((event_name, data))
+            elif event_type in ["recurring event", "one time event", "one time class event"]:
+                events.append((event_name, data))
+        # Sort lists by name
+        classes.sort(key = lambda x: x[0])
+        events.sort(key = lambda x: x[0])
+        return classes, events
+
+    def get_class_string(self, data:dict):
+        days = {}
+        blocks:list = data["blocks"]
+        for b in blocks:
+            if b["day"] in days.keys():
+                days[b["day"]].append(b)
+            else:
+                days[b["day"]] = [b]
+        class_string = ""
+        for j, day in enumerate(sorted(days.keys(), key=DAYS.index)):
+            day_string = day + ": "
+            for k, b in enumerate(days[day]):
+                day_string += QTime(b["time"]["hour"], b["time"]["minute"]).toString("hh:mmAP") + (
+                    ", " if k != len(days[day]) - 1 else "")
+            class_string += day_string + ("  " if j != len(days.keys()) - 1 else "")
+        return class_string
+
+    def add_class_row(self, i, class_name, data):
+        button = self.get_edit_button(class_name, data)
+        self.class_grid_layout.addWidget(button, i + 1, 0)
+        self.class_grid_layout.addWidget(QLabel(self.get_class_string(data), self), i + 1, 1)
+        class_event_button_layout = QVBoxLayout()
+        class_event_button_layout.setSpacing(5)
+        self.class_grid_layout.addLayout(class_event_button_layout, i + 1, 2)
+
+    def get_event_label(self, event_type, data):
+        if event_type == "recurring event":
+            return data["day"] + ": " + to_qtime(data["time"]).toString("hh:mmAP")
+        else:
+            return to_qdate(data["date"]).toString("MMM dd yyyy ") + to_qtime(data["time"]).toString("hh:mmAP")
+
+    def add_event_row(self, i, event_name, data):
+        event_type: str = data["type"]
+        if event_type in ["one time event", "recurring event"]:
+            self.event_grid_layout.addWidget(self.get_edit_button(event_name, data), i + 1, 0)
+            self.event_grid_layout.addWidget(QLabel(camel_case(event_type), self), i + 1, 2)
+            self.event_grid_layout.addWidget(QLabel(self.get_event_label(event_type, data), self), i + 1, 1)
+        if event_type == "one time class event":
+            for row in range(self.class_grid_layout.rowCount()):
+                # noinspection PyTypeChecker
+                edit_button: QPushButton = self.class_grid_layout.itemAtPosition(row, 0).widget()
+                if edit_button.text() == data["class_name"]:
+                    # noinspection PyTypeChecker
+                    layout: QVBoxLayout = self.class_grid_layout.itemAtPosition(row, 2)
+                    if layout is None:
+                        continue
+                    else:
+                        layout.addWidget(self.get_edit_button(event_name, data))
+
+    def initialize_layout(self):
+        classes, events = self.get_events_by_type()
         # Add Classes to Table
-        for i, (class_name, data) in enumerate(self.schedule.schedule.items()):
-            if data["type"] != "class":
-                continue
-            # Add name to table
-            button = QPushButton(class_name)
-            button.setStyleSheet(self.schedule.get_event_stylesheet(class_name))
-            button.clicked.connect(lambda state, x=data: self.edit_class(x))
-            self.grid_layout.addWidget(button, i + 1, 0)
-            # Add Blocks
-            block_string = ""
-            days = {}
-            for b in data["blocks"]:
-                if b["day"] in days.keys():
-                    days[b["day"]].append(b)
-                else:
-                    days[b["day"]] = [b]
-            class_string = ""
-            for j, day in enumerate(sorted(days.keys(), key=DAYS.index)):
-                day_string = day + ": "
-                for k, b in enumerate(days[day]):
-                    day_string += QTime(b["time"]["hour"], b["time"]["minute"]).toString("hh:mmAP") + (", " if k != len(days[day]) - 1 else "")
-                class_string += day_string + ("  " if j != len(days.keys()) - 1 else "")
-            self.grid_layout.addWidget(QLabel(class_string), i+1, 1)
+        for i, (class_name, data) in enumerate(classes):
+            self.add_class_row(i, class_name, data)
+        # Add Events to Table
+        for i, (event_name, data) in enumerate(events):
+            self.add_event_row(i, event_name, data)
 
 class DayViewer(QWidget):
     back = pyqtSignal()
@@ -319,8 +416,8 @@ class ClassTimePicker(QWidget):
     def get_time(self):
         return self.time_selector.time()
 
-    def set_time(self, time):
-        self.time_selector.setTime(QTime(time["hour"], time["minute"]))
+    def set_time(self, time:QTime):
+        self.time_selector.setTime(time)
 
     def set_day(self, day):
         for b in self.day_picker.buttons:
@@ -366,12 +463,12 @@ class DateTimePickerSeries(QWidget):
         self.model.content = date_time
 
 class Popup(QDialog):
-    def __init__(self, schedule:Schedule, parent=None, data=None):
+    def __init__(self, schedule:Schedule, parent=None, edit_data=None):
         super(Popup, self).__init__(parent)
         self.schedule = schedule
-        self.data, self.class_name = data if data is not None else (None, None)
+        self.event_name, self.data = edit_data if edit_data is not None else (None, None)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-        self.setWindowTitle("Add New Scheduled Notes" if data is None else "Edit {} Details".format(self.class_name))
+        self.setWindowTitle("Add New Scheduled Notes" if edit_data is None else "Edit {} Details".format(self.event_name))
 
         self.layout = QVBoxLayout()
         self.layout.setSpacing(0)
@@ -430,6 +527,8 @@ class Popup(QDialog):
         self.class_picker = QPushButton()
         class_picker_menu = QMenu()
         for class_name in self.schedule.schedule.keys():
+            if self.schedule.schedule[class_name]["type"] != "class":
+                continue
             class_action = QAction(class_name, parent=class_picker_menu)
             class_action.triggered.connect(lambda state, x=class_action.text(): self.class_picker.setText(x))
             class_picker_menu.addAction(class_action)
@@ -480,7 +579,8 @@ class Popup(QDialog):
         self.stack.addWidget(self.recurring_event_options)
         self.stack.addWidget(self.class_options)
 
-        self.set_type("Class")
+        if self.data is None:
+            self.set_type("Class")
 
         self.layout.addWidget(self.form_layout_widget)
         self.layout.addWidget(self.stack)
@@ -489,22 +589,45 @@ class Popup(QDialog):
 
         #Update Values if self.data is defined
         if self.data is not None:
-            self.name_edit.setText(self.data["name"])
-            self.start_date.setDate(to_qdate(self.data["start"]))
-            self.end_date.setDate(to_qdate(self.data["end"]))
+            event_type = self.data["type"]
+            self.set_type(camel_case(event_type))
+            # noinspection PyTypeChecker
+            class_layout: QFormLayout = self.stack.currentWidget().layout()
+            self.name_edit.setText(self.event_name)
             self.color_picker.setCurrentColor(to_qcolor(self.data["color"]))
-            self.spin_box.setValue(len(self.data["blocks"]))
-            for i in range(0, len(self.data["blocks"])):
-                w : ClassTimePicker = self.layout.itemAt(self.rows_before_blocks + i, QFormLayout.FieldRole).widget()
-                block = self.data["blocks"][i]
-                w.set_day(block["day"])
-                w.set_time(block["time"])
+            if event_type in ["class", "recurring event"]:
+                self.start_date_model.content = QDateTime(to_qdate(self.data["start"]))
+                self.end_date_model.content = QDateTime(to_qdate(self.data["end"]))
+            if event_type == "class":
+                blocks = self.data["blocks"]
+                self.update_blocks(len(blocks))
+                for i, row in enumerate(range(self.rows_before_blocks, class_layout.rowCount())):
+                    block = blocks[i]
+                    # noinspection PyTypeChecker
+                    block_widget: ClassTimePicker = class_layout.itemAt(row, QFormLayout.FieldRole).widget()
+                    block_widget.set_time(to_qtime(block["time"]))
+                    block_widget.set_day(block["day"])
+            if event_type == "recurring event":
+                self.recurring_event_time_picker.set_day(self.data["day"])
+                self.recurring_event_time_picker.set_time(to_qtime(self.data["time"]))
+            if event_type in ["one time event", "one time class event"]:
+                date_time = QDateTime()
+                date_time.setDate(to_qdate(self.data["data"]))
+                date_time.setTime(to_qtime(self.data["time"]))
+                self.event_date_model.content = date_time
+            if event_type == "one time class event":
+                self.class_picker.setText(self.data["class_name"])
 
     def show_buttons(self):
-        buttonBox = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel, parent=self)
-        buttonBox.accepted.connect(self.accept)
-        buttonBox.rejected.connect(self.reject)
-        buttonBox.setOrientation(Qt.Horizontal)
+        save_button = QDialogButtonBox.Save if self.data is None else QDialogButtonBox.Apply
+        cancel_button = QDialogButtonBox.Cancel
+        buttonBox = QDialogButtonBox(Qt.Horizontal)
+        buttonBox.addButton(save_button).clicked.connect(self.accept)
+        buttonBox.addButton(cancel_button).clicked.connect(self.reject)
+        if self.data is not None:
+            delete_button = buttonBox.addButton(QDialogButtonBox.Discard)
+            delete_button.setText("Delete")
+            delete_button.clicked.connect(self.delete_event)
         self.layout.addWidget(buttonBox)
 
     def set_type(self, event_type:str):
@@ -554,6 +677,9 @@ class Popup(QDialog):
                                                                                  self.color_picker.currentColor().blue()))
 
     def update_blocks(self, value):
+        if self.spin_box.value() != value:
+            self.spin_box.setValue(value)
+            return
         if self.blocks == value:
             return
         old_blocks = self.blocks
@@ -587,7 +713,6 @@ class Popup(QDialog):
                 offset = self.rows_before_blocks + old_blocks + i - 1
                 widget = class_options_layout.itemAt(offset, QFormLayout.FieldRole).widget()
                 label = class_options_layout.itemAt(offset, QFormLayout.LabelRole).widget()
-                print(widget.size())
                 widget.hide()
                 label.hide()
                 widget.adjustSize()
@@ -595,8 +720,6 @@ class Popup(QDialog):
                 self.class_options.adjustSize()
                 self.stack.adjustSize()
                 self.adjustSize()
-
-                print(widget.size())
 
         # self.class_options.adjustSize()
         # self.stack.adjustSize()
@@ -671,6 +794,15 @@ class Popup(QDialog):
             }
         return data
 
+    def delete_event(self):
+        error = QMessageBox()
+        error.setText("Are you sure you would like to delete this event?")
+        error.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+        result = error.exec_()
+        if result == QMessageBox.Yes:
+            self.schedule.delete_event(self.event_name)
+            self.reject()
+
     def accept(self):
         event_type = self.event_type.text()
         if event_type == "":
@@ -703,7 +835,6 @@ class Popup(QDialog):
                 # Check Blocks
                 # noinspection PyTypeChecker
                 class_layout:QFormLayout = self.stack.currentWidget().layout()
-                print(class_layout)
                 for row in range(self.rows_before_blocks, class_layout.rowCount()):
                     block_widget = class_layout.itemAt(row, QFormLayout.FieldRole).widget()
                     if block_widget.isHidden():
@@ -745,22 +876,30 @@ class Popup(QDialog):
                 error.exec_()
                 self.class_picker.setFocus()
                 return
-        if self.data is not None:
-            error = QMessageBox()
-            error.setText("Changes will not be saved because this feature is incomplete.")
-            error.exec_()
-            super(Popup, self).reject()
         # Valid name
-        elif self.get_name() in self.schedule.schedule.keys():
-            error = QMessageBox()
-            error.setText("An event with this name already exists, would you like to overwrite it?")
-            error.setStandardButtons(error.Apply | error.Cancel)
-            result = error.exec_()
-            if result == error.Apply:
-                self.schedule.edit_event(self.get_data())
-                self.reject()
-            elif result == error.Cancel:
-                self.name_edit.setFocus()
+        if self.get_name() in self.schedule.schedule.keys():
+            if self.data is None:
+                error = QMessageBox()
+                error.setText("An event with this name already exists, would you like to overwrite it?")
+                error.setStandardButtons(error.Apply | error.Cancel)
+                result = error.exec_()
+                if result == error.Apply:
+                    if self.event_type.text() == "One Time Class Event":
+                        to_overwrite = self.schedule.schedule[self.get_name()]
+                        if to_overwrite["type"] == "class":
+                            if self.class_picker.text() == self.get_name():
+                                error = QMessageBox()
+                                error.setText("Cannot overwrite a class with a one time class event for that class.\n"
+                                              "Please select a different class.")
+                                error.setStandardButtons(QMessageBox.Close)
+                                error.exec_()
+                                return
+                    self.schedule.edit_event(self.get_data())
+                    self.reject()
+                elif result == error.Cancel:
+                    self.name_edit.setFocus()
+            self.schedule.edit_event(self.get_data())
+            self.reject()
         super(Popup, self).accept()
 
     def reject(self):
