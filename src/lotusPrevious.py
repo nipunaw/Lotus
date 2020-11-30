@@ -50,13 +50,13 @@ class UIPreviousWindow(QWidget):
 
         self.home_button_scroll = QtWidgets.QScrollArea()  # self.home_button_container
         self.home_button_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.home_button_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.home_button_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.home_button_scroll.setWidgetResizable(True)
         self.home_button_scroll.setWidget(self.home_button_container)
 
         self.all_button_scroll = QtWidgets.QScrollArea() #self.all_button_container
         self.all_button_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.all_button_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.all_button_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.all_button_scroll.setWidgetResizable(True)
         self.all_button_scroll.setWidget(self.all_button_container)
 
