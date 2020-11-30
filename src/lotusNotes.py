@@ -35,7 +35,7 @@ def default_config():
         config['DEFAULT'] = {'Name': '',
                              'Pen_Size': '5',
                              'Eraser_Size': '5',
-                             'Name_Heading': 'True',
+                             'Name_Heading': 'False',
                              'Default_Font': 'Sans Serif',
                              'Default_Style': 'Normal',
                              'Default_Font_Size': '12'}
@@ -410,6 +410,8 @@ class CanvasWindow(QScrollArea):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
 
+        self.was_opened = False
+
     def mouseGrabScroll(self, offset):
         x = self.horizontalScrollBar().value() + offset.x()
         y = self.verticalScrollBar().value() + offset.y()
@@ -570,9 +572,10 @@ class UINoteWindow(QWidget):
         self.file_path_2 = ""
 
         # Add Heading if its on by default
-        dialog = QtWidgets.QDialog(self)
-        if default_heading == "True":
-            self.accept_header("---", True, dialog)
+        if not self.canvas_window.was_opened:
+            dialog = QtWidgets.QDialog(self)
+            if default_heading == "True":
+                self.accept_header("---", True, dialog)
 
     ########### Closing ###########
     def closeEvent(self, event):
@@ -924,8 +927,8 @@ class UINoteWindow(QWidget):
         composed_heading = composed_heading.rstrip("\n")
         text = QtWidgets.QPlainTextEdit(composed_heading)
         text.setFont(self.font)
-        xlen = (max_len+6)*self.font.pointSize()
-        ylen = height*self.font.pointSize()*2 + 6
+        xlen = (max_len+4)*self.font.pointSize()
+        ylen = height*self.font.pointSize()*2 + 2
         text.setGeometry(0, 0, xlen, ylen)
         text.setFixedHeight(ylen)
         for i in range(len(self.canvas_window.label.floatingWidgets)):
@@ -935,7 +938,7 @@ class UINoteWindow(QWidget):
                 break
         text.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         text.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        header_widget = FloatingWidget(text, self.canvas_window.label, 0, 0, True)
+        header_widget = FloatingWidget(text, self.canvas_window.label, 0, 0, True, 24)
         header_widget.is_heading = True
         self.canvas_window.label.floatingWidgets.append(header_widget)
         header_widget.show()
@@ -978,7 +981,9 @@ class UINoteWindow(QWidget):
         table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         table.setFixedSize(table.horizontalHeader().length() + table.verticalHeader().width(),
                                         table.verticalHeader().length() + table.horizontalHeader().height())
-        table_widget = FloatingWidget(table, self.canvas_window.label, 10, 10)
+        stylesheet = "::section{Background-color:rgb(255,255,255)}"
+        table.setStyleSheet(stylesheet)
+        table_widget = FloatingWidget(table, self.canvas_window.label, 10, 10, False, 24)
         self.canvas_window.label.floatingWidgets.append(table_widget)
         table_widget.show()
         dialog.close()
@@ -995,7 +1000,7 @@ class UINoteWindow(QWidget):
         image_label = QLabel()
         image_label.setPixmap(image)
         image_label.setGeometry(0, 0, width, height)
-        image_widget = FloatingWidget(image_label, self.canvas_window.label, 10, 10, True)
+        image_widget = FloatingWidget(image_label, self.canvas_window.label, 10, 10, False)
         self.canvas_window.label.floatingWidgets.append(image_widget)
         image_widget.show()
         self.update()
@@ -1005,7 +1010,7 @@ class UINoteWindow(QWidget):
         caption = QtWidgets.QLineEdit()
         caption.setGeometry(0,0,160,20)
         caption.setFixedHeight(20)
-        caption_widget = FloatingWidget(caption, self.canvas_window.label, 10, 10, True)
+        caption_widget = FloatingWidget(caption, self.canvas_window.label, 10, 10, True, 24)
         self.canvas_window.label.floatingWidgets.append(caption_widget)
         caption_widget.child_widget.setFont(self.font)
         caption_widget.show()
@@ -1030,6 +1035,7 @@ class UINoteWindow(QWidget):
             self.file_path = file_path
         self.open_directory(self.file_path)
         self.setWindowTitle(self.file_path)
+
 
     def update_open_recent_menu(self):
         try:
@@ -1076,8 +1082,21 @@ class UINoteWindow(QWidget):
                         f.writelines(p + "\n" for p in paths)
                 self.deleted_file.emit(file_path)
                 self.deleteLater()
+
         else:
             self.canvas_window.label.loadImage(file_path)
+            self.canvas_window.was_opened = True
+            for i in range(len(self.canvas_window.label.floatingWidgets)):
+                if self.canvas_window.label.floatingWidgets[i].is_heading:
+                    self.canvas_window.label.floatingWidgets[i].to_delete = True
+                    self.canvas_window.label.floatingWidgetDelete(self.canvas_window.label.floatingWidgets[i])
+                    break
+            # while len(self.canvas_window.label.floatingWidgets) != 0:
+            #     self.canvas_window.label.floatingWidgets.pop().deleteLater()
+                # widget.deleteLater()
+            # for i in self.canvas_window.label.floatingWidgets:
+            #     i.deleteLater()
+            # self.canvas_window.label.floatingWidgets.clear()
 
     def ocr(self):
         if self.canvas_window.label.hasChanged() or self.file_path == "":

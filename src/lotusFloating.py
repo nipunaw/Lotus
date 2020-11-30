@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 
 class FloatingWidget(QtWidgets.QWidget):
-    def __init__(self, child, parent, x=0, y=0, resize_child = False):
+    def __init__(self, child, parent, x=0, y=0, resize_child = False, padding = 6):
         super().__init__(parent=parent)
 
 
@@ -25,9 +25,9 @@ class FloatingWidget(QtWidgets.QWidget):
 
         self.position_x = self.pos().x()
         self.position_y = self.pos().y()
-        self.setMinimumWidth(self.child_widget.width()+6)
-        self.setMinimumHeight(self.child_widget.height()+6)
-        self.setGeometry(x, y, self.child_widget.width()+6, self.child_widget.height()+6)
+        self.setMinimumWidth(self.child_widget.width()+padding)
+        self.setMinimumHeight(self.child_widget.height()+padding)
+        self.setGeometry(x, y, self.child_widget.width()+padding, self.child_widget.height()+padding)
 
         self.setAttribute(QtCore.Qt.WA_StyledBackground, True)
         self.child_widget.move(3, 3)
