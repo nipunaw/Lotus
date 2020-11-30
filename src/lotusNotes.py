@@ -527,6 +527,8 @@ class CanvasWindow(QScrollArea):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
 
+        self.was_opened = False
+
     def mouseGrabScroll(self, offset):
         x = self.horizontalScrollBar().value() + offset.x()
         y = self.verticalScrollBar().value() + offset.y()
@@ -687,9 +689,10 @@ class UINoteWindow(QWidget):
         self.file_path_2 = ""
 
         # Add Heading if its on by default
-        dialog = QtWidgets.QDialog(self)
-        if default_heading == "True":
-            self.accept_header("---", True, dialog)
+        if not self.canvas_window.was_opened:
+            dialog = QtWidgets.QDialog(self)
+            if default_heading == "True":
+                self.accept_header("---", True, dialog)
 
     ########### Closing ###########
     def closeEvent(self, event):
@@ -1147,6 +1150,7 @@ class UINoteWindow(QWidget):
         self.open_directory(self.file_path)
         self.setWindowTitle(self.file_path)
 
+
     def update_open_recent_menu(self):
         try:
             with open(DIRECTORY_FILE, "r") as f:
@@ -1192,8 +1196,13 @@ class UINoteWindow(QWidget):
                         f.writelines(p + "\n" for p in paths)
                 self.deleted_file.emit(file_path)
                 self.deleteLater()
+
         else:
             self.canvas_window.label.loadImage(file_path)
+            self.canvas_window.was_opened = True
+            for i in self.canvas_window.label.floatingWidgets:
+                i.deleteLater()
+            self.canvas_window.label.floatingWidgets.clear()
 
     def ocr(self):
         if self.canvas_window.label.hasChanged() or self.file_path == "":
