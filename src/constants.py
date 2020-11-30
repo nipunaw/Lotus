@@ -45,6 +45,7 @@ assets = {
     "help_new_notes_9": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_new_notes_9.jpg'),
     "help_new_notes_10": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_new_notes_10.jpg'),
     "help_previous_notes_1": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_previous_notes_1.jpg'),
+    "help_previous_notes_2": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_previous_notes_2.jpg'),
     "help_schedule_1": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_schedule_1.jpg'),
     "help_schedule_2": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_schedule_2.jpg'),
     "help_schedule_3": os.path.join(os.path.abspath(os.path.dirname(__file__)), 'assets/help_schedule_3.jpg'),
