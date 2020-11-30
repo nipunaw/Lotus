@@ -1200,9 +1200,17 @@ class UINoteWindow(QWidget):
         else:
             self.canvas_window.label.loadImage(file_path)
             self.canvas_window.was_opened = True
-            for i in self.canvas_window.label.floatingWidgets:
-                i.deleteLater()
-            self.canvas_window.label.floatingWidgets.clear()
+            for i in range(len(self.canvas_window.label.floatingWidgets)):
+                if self.canvas_window.label.floatingWidgets[i].is_heading:
+                    self.canvas_window.label.floatingWidgets[i].to_delete = True
+                    self.canvas_window.label.floatingWidgetDelete(self.canvas_window.label.floatingWidgets[i])
+                    break
+            # while len(self.canvas_window.label.floatingWidgets) != 0:
+            #     self.canvas_window.label.floatingWidgets.pop().deleteLater()
+                # widget.deleteLater()
+            # for i in self.canvas_window.label.floatingWidgets:
+            #     i.deleteLater()
+            # self.canvas_window.label.floatingWidgets.clear()
 
     def ocr(self):
         if self.canvas_window.label.hasChanged() or self.file_path == "":
