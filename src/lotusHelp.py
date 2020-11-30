@@ -90,8 +90,18 @@ class UIHelpWindow(QWidget):
         self.insertImageFunc(assets["help_new_notes_2"], self.cursor)
         self.helpTextEditor.append('\n')
 
-        self.helpTextEditor.append('By clicking in the upper right of the canvas, you can type in a header. Once you finish one line in the header, you can click below that line to type another line. \n')
-        self.insertImageFunc(assets["help_new_notes_3"], self.cursor)
+        self.helpTextEditor.append('By clicking on Template and Add/Edit Heading, you can add a typed header to your notes.\n')
+        self.insertImageFunc(assets["help_new_notes_3.1"], self.cursor)
+        self.helpTextEditor.append('\n')
+
+        self.helpTextEditor.append(
+            'A pop-up window will appear, allowing you to enter a title, as well as add a date and class. The name can also be edited.\n')
+        self.insertImageFunc(assets["help_new_notes_3.2"], self.cursor)
+        self.helpTextEditor.append('\n')
+
+        self.helpTextEditor.append(
+            'Once saved, the header will be displayed.\n')
+        self.insertImageFunc(assets["help_new_notes_3.3"], self.cursor)
         self.helpTextEditor.append('\n')
 
         self.helpTextEditor.append('The header is useful since it cannot be written over while taking notes. \n')
@@ -108,7 +118,7 @@ class UIHelpWindow(QWidget):
         self.helpTextEditor.append('\n')
 
         self.helpTextEditor.append('Your notes can also be converted into a .txt text file by clicking under the OCR tab at the top of the window.'
-                                   'This process, which is in beta, will only recognize very neatly drawn handwriting, so please use with this in mind. \n')
+                                   ' This process, which is in beta, will only recognize very neatly drawn handwriting, so please use with this in mind. \n')
         self.insertImageFunc(assets["help_new_notes_7"], self.cursor)
         self.helpTextEditor.append('\n')
 
@@ -136,10 +146,15 @@ class UIHelpWindow(QWidget):
         self.helpTextEditor.append('\n')
 
         self.helpTextEditor.append(
-            'By clicking on the Previous Notes button, a new window will appear which will display all of the notes created by clicking the New Notes button and saving the canvas.\n')
+            'By clicking on the Previous Notes button, a new window will appear which will display all of the notes created.\n')
         self.insertImageFunc(assets["help_previous_notes_1"], self.cursor)
         self.helpTextEditor.append('\n')
 
+        self.helpTextEditor.append(
+            'By clicking under associated tab, you will see previews of any related prior notes, which can be clicked on to re-open it as editable in the notes editing window.\n')
+        self.insertImageFunc(assets["help_previous_notes_2"], self.cursor)
+        self.helpTextEditor.append('\n')
+        
         # Schedule Section
         self.helpTextEditor.setCurrentFont(QFont('Lato'))
         self.helpTextEditor.setFontUnderline(True)

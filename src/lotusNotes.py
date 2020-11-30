@@ -633,6 +633,7 @@ class UINoteWindow(QWidget):
         font = config['DEFAULT']['default_font']
         style = config['DEFAULT']['default_style']
         font_size = config['DEFAULT']['default_font_size']
+        default_heading = config['DEFAULT']['name_heading']
         if style == "Bold":
             self.font = QtGui.QFont(font, int(font_size),QtGui.QFont.Bold)
         else:
@@ -655,34 +656,6 @@ class UINoteWindow(QWidget):
         self.canvas_window = CanvasWindow()
         self.canvas_window.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.layout = QVBoxLayout()
-
-        # self.heading_title = QtWidgets.QLineEdit()
-        # title_font = QtGui.QFont("Times New Roman", 20)
-        # self.heading_title.setFont(title_font)
-        # self.heading_title.setStyleSheet("border: 0px")
-        # self.layout.addWidget(self.heading_title)
-        #
-        # subheading_font = QtGui.QFont("Times New Roman", 15)
-        # self.heading_name = QtWidgets.QLineEdit()
-        # self.heading_name.setFont(subheading_font)
-        # self.heading_name.setStyleSheet("border: 0px")
-        # self.layout.addWidget(self.heading_name)
-        #
-        # self.heading_course = QtWidgets.QLineEdit()
-        # self.heading_course.setFont(subheading_font)
-        # self.heading_course.setStyleSheet("border: 0px")
-        # self.layout.addWidget(self.heading_course)
-        #
-        # self.heading_date = QtWidgets.QLineEdit()
-        # self.heading_date.setFont(subheading_font)
-        # self.heading_date.setStyleSheet("border: 0px")
-        # self.layout.addWidget(self.heading_date)
-
-        self.header_text = QtWidgets.QPlainTextEdit()
-        self.header_widget = FloatingWidget(self.header_text, self.canvas_window.label, True)
-        self.header_widget.is_heading = True
-        self.canvas_window.label.floatingWidgets.append(self.header_widget)
-        self.header_widget.hide()
 
         self.layout.setContentsMargins(0,0,0,0)
         self.layout.setSpacing(0)
@@ -712,6 +685,11 @@ class UINoteWindow(QWidget):
             self.file_path = ""
 
         self.file_path_2 = ""
+
+        # Add Heading if its on by default
+        dialog = QtWidgets.QDialog(self)
+        if default_heading == "True":
+            self.accept_header("---", True, dialog)
 
     ########### Closing ###########
     def closeEvent(self, event):
@@ -1014,18 +992,17 @@ class UINoteWindow(QWidget):
         layout.addRow(dropdown)
         add_button = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Save | QtWidgets.QDialogButtonBox.Cancel)
         add_button.accepted.connect(
-            lambda: self.accept_header(dropdown.currentText(), time_checkbox, header_dialog))
+            lambda: self.accept_header(dropdown.currentText(), time_checkbox.isChecked(), header_dialog))
         add_button.rejected.connect(header_dialog.close)
         add_button.setOrientation(Qt.Horizontal)
         layout.addWidget(add_button)
         header_dialog.setLayout(layout)
         header_dialog.update()
         header_dialog.show()
-        ##self.update()
         self.canvas_window.label.paintMirrorEvent()
 
     def accept_header(self, course, time_checkbox, dialog):
-        if len(self.heading_title.text()) == 0 and len(self.heading_name.text()) == 0 and course == "---" and (not time_checkbox.isChecked()):
+        if len(self.heading_title.text()) == 0 and len(self.heading_name.text()) == 0 and course == "---" and (not time_checkbox):
             #prompt to add at least one field
             error = QtWidgets.QMessageBox()
             error.setText("Please fill out at least one entry.")
@@ -1033,7 +1010,7 @@ class UINoteWindow(QWidget):
             return
         # Update class selected and date bool
         self.heading_course.setText(course)
-        self.add_date = time_checkbox.isChecked()
+        self.add_date = time_checkbox
         # Get current date
         today = date.today()
         date_str = today.strftime("%B %d, %Y")
@@ -1053,35 +1030,30 @@ class UINoteWindow(QWidget):
         composed_heading = composed_heading + "Class: " + course + "\n"
         if len(course) > max_len:
             max_len = len(course)
-        if time_checkbox.isChecked():
+        if time_checkbox:
             composed_heading = composed_heading + "Date: " + date_str
             if len(date_str) > max_len:
                 max_len = len(date_str)
             height = height + 1
         composed_heading = composed_heading.rstrip("\n")
-
         text = QtWidgets.QPlainTextEdit(composed_heading)
-        print(self.font.styleName())
         text.setFont(self.font)
-
-        xlen = (max_len+4)*self.font.pointSize()
-        ylen = height*self.font.pointSize()*2
+        xlen = (max_len+6)*self.font.pointSize()
+        ylen = height*self.font.pointSize()*2 + 6
         text.setGeometry(0, 0, xlen, ylen)
         text.setFixedHeight(ylen)
-
         for i in range(len(self.canvas_window.label.floatingWidgets)):
             if self.canvas_window.label.floatingWidgets[i].is_heading:
                 self.canvas_window.label.floatingWidgets[i].to_delete = True
                 self.canvas_window.label.floatingWidgetDelete(self.canvas_window.label.floatingWidgets[i])
                 break
-
+        text.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        text.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         header_widget = FloatingWidget(text, self.canvas_window.label, 0, 0, True)
         header_widget.is_heading = True
         self.canvas_window.label.floatingWidgets.append(header_widget)
-
         header_widget.show()
         dialog.close()
-        ##self.update()
         self.canvas_window.label.paintMirrorEvent()
         return
 
@@ -1105,7 +1077,6 @@ class UINoteWindow(QWidget):
         table_dialog.setLayout(layout)
         table_dialog.update()
         table_dialog.show()
-        ##self.update()
         self.canvas_window.label.paintMirrorEvent()
 
     def accept_table(self, rows, columns, dialog):
@@ -1125,7 +1096,6 @@ class UINoteWindow(QWidget):
         self.canvas_window.label.floatingWidgets.append(table_widget)
         table_widget.show()
         dialog.close()
-        ##self.update()
         self.canvas_window.label.paintMirrorEvent()
         return
 
