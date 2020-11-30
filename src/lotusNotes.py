@@ -448,7 +448,8 @@ class Canvas(QLabel):
 
     def save(self, file_path):
         for i in self.floatingWidgets:
-             self.floatingWidgetPlace(i)
+            if not i.isHidden():
+                self.floatingWidgetPlace(i)
         self.floatingWidgets.clear()
         self.activeLayers[0].save(file_path)
         self.last_save = self.activeLayers[0].toImage()

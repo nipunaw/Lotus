@@ -16,10 +16,11 @@ from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QPushButton, QWidget
 
 from src.constants import DIRECTORY_FILE, SCHEDULE_FILE_PATH, assets
+from src.lotusCalender import Schedule
 
 
 class UIPreviousWindow(QWidget):
-    def __init__(self, schedule, set_paths, parent=None):
+    def __init__(self, schedule:Schedule, set_paths, parent=None):
         super(UIPreviousWindow, self).__init__(parent)
         self.set_paths = set_paths
         self.schedule = schedule
@@ -37,7 +38,7 @@ class UIPreviousWindow(QWidget):
         #self.setFixedSize(600, 400)
 
         self.parent_layout = QtWidgets.QStackedWidget(self)
-        self.parent_layout.setFixedSize(600, 400)
+        self.parent_layout.setFixedSize(650, 400)
 
         self.home_button_container = QWidget()
         self.home_button_layout = QtWidgets.QVBoxLayout()
@@ -181,13 +182,27 @@ class UIPreviousWindow(QWidget):
                     directory_array = self.directories[i].split('/')
                     if directory_array[-5] == "data" and directory_array[-4].isdigit() and directory_array[
                         -3].isdigit() and directory_array[-2].isdigit():
+                        file_event_name = directory_array[-1].strip()[:-11]
+                        added_class_dir = False
                         for x in self.name_classes:
-                            if directory_array[-1].strip()[:-11] == x: ## Change for timestamp
+                            if file_event_name == x: ## Change for timestamp
                                 self.other_buttons[self.directories[i]] = QPushButton(self.directories[i])
                                 self.other_buttons[self.directories[i]].setIcon(QIcon(QPixmap(self.directories[i].strip())))
                                 self.other_buttons[self.directories[i]].setIconSize(QSize(100, 100))
                                 #self.all_button_layout.addWidget(self.other_buttons[self.directories[i]])
                                 self.class_layouts[x].addWidget(self.other_buttons[self.directories[i]])
+                                added_class_dir = True
+                        if added_class_dir:
+                            continue
+                        for event_name, data in self.schedule.schedule.items():
+                            if data["type"] != "one time class event":
+                                continue
+                            if file_event_name == event_name:
+                                self.other_buttons[self.directories[i]] = QPushButton(self.directories[i])
+                                self.other_buttons[self.directories[i]].setIcon(QIcon(QPixmap(self.directories[i].strip())))
+                                self.other_buttons[self.directories[i]].setIconSize(QSize(100, 100))
+                                self.class_layouts[data["class_name"]].addWidget(self.other_buttons[self.directories[i]])
+
             else:
                 for i in range(len(self.directories)):
                     self.buttons[self.directories[i]] = QPushButton(self.directories[i])

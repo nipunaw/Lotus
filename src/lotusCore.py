@@ -164,7 +164,7 @@ class MainWindow(QMainWindow):
 
     def startPreviousWindow(self):
         self.PreviousWindow = UIPreviousWindow(self.schedule, set_paths=False)
-        self.PreviousWindow.setFixedSize(600, 400)
+        self.PreviousWindow.setFixedSize(650, 400)
         self.PreviousWindow.setWindowTitle("Previous Notes")
 
 

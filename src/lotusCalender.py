@@ -78,7 +78,7 @@ class Schedule(QObject):
                                                         self._schedule[event_name]["color"]["b"])
 
     def get_event_button(self, event_name:str, time:QTime, include_time=True):
-        time_string = time.toString("HH:mm AP")
+        time_string = time.toString("h:mm AP")
         button_title = "{}{}".format(event_name, " " + time_string if include_time else "")
         button = QPushButton(button_title)
         button.setStyleSheet(self.get_event_stylesheet(event_name))
@@ -87,16 +87,23 @@ class Schedule(QObject):
     def get_event_buttons(self, date:QDate, include_times=True):
         buttons = []
         for event_name, data in self._schedule.items():
-            if data["type"] == "class":
+            event_type = data["type"]
+            if event_type in ["class", "recurring event"]:
                 start_date, end_date = self.get_recurring_event_start_end_dates(data)
                 if start_date <= date <= end_date:
-                    for b in data["blocks"]:
-                        if b["day"] == DAYS[date.dayOfWeek()-1]:
-                            # Class on this day
-                            time = to_qtime(b["time"])
+                    if event_type == "class":
+                        for b in data["blocks"]:
+                            if b["day"] == DAYS[date.dayOfWeek()-1]:
+                                # Class on this day
+                                time = to_qtime(b["time"])
+                                button = self.get_event_button(event_name, time, include_times)
+                                buttons.append((button, event_name, date, time))
+                    if event_type == "recurring event":
+                        if data["day"] == DAYS[date.dayOfWeek()-1]:
+                            time = to_qtime(data["time"])
                             button = self.get_event_button(event_name, time, include_times)
                             buttons.append((button, event_name, date, time))
-            elif data["type"] in ["one time class event", "one time event"]:
+            elif event_type in ["one time class event", "one time event"]:
                 if to_qdate(data["date"]) == date:
                     time = to_qtime(data["time"])
                     button = self.get_event_button(event_name, time, include_times)
@@ -116,21 +123,28 @@ class Schedule(QObject):
 
     def edit_event(self, data:dict):
         event_name = data["name"]
+        overwritten_data = self._schedule[event_name]
         data.pop("name")
+        if overwritten_data["type"] == "class":
+            self.delete_class_events(event_name)
         self._schedule[event_name] = data
         self.schedule = self._schedule
 
     def delete_event(self, event_name:str):
         deleted_data = self._schedule[event_name]
-        to_delete = [event_name]
         if deleted_data["type"] == "class":
-            for name, data in self._schedule.items():
-                if data["type"] == "one time class event":
-                    if data["class_name"] == event_name:
-                        to_delete.append(name)
+            self.delete_class_events(event_name)
+        self._schedule.pop(event_name)
+        self.schedule = self._schedule
+
+    def delete_class_events(self, class_name):
+        to_delete = []
+        for name, data in self._schedule.items():
+            if data["type"] == "one time class event":
+                if data["class_name"] == class_name:
+                    to_delete.append(name)
         for name in to_delete:
             self._schedule.pop(name)
-        self.schedule = self._schedule
 
 class UICalendarWindow(QWidget):
     def __init__(self, schedule:Schedule, parent=None):
@@ -364,13 +378,23 @@ class ScheduleCalendar(QCalendarWidget):
         painter.drawText(QRect(rect), Qt.TextSingleLine|Qt.AlignCenter, str(date.day()))
 
     def open_day_viewer(self, date:QDate):
+        date_contains_event = False
         for event_name, data in self.schedule.schedule.items():
-            if self.schedule.is_recurring_event_date(event_name, date):
-                self.day_viewer = DayViewer(date, self.schedule, parent=self)
-                self.day_viewer.back.connect(lambda: self.stack.removeWidget(self.day_viewer))
-                self.stack.addWidget(self.day_viewer)
-                self.stack.setCurrentWidget(self.day_viewer)
-                break
+            event_type = data["type"]
+            if event_type in ["class", "recurring event"]:
+                if self.schedule.is_recurring_event_date(data, date):
+                    date_contains_event = True
+                    break
+            else:
+                event_date = to_qdate(data["date"])
+                if date == event_date:
+                    date_contains_event = True
+                    break
+        if date_contains_event:
+            self.day_viewer = DayViewer(date, self.schedule, parent=self)
+            self.day_viewer.back.connect(lambda: self.stack.removeWidget(self.day_viewer))
+            self.stack.addWidget(self.day_viewer)
+            self.stack.setCurrentWidget(self.day_viewer)
 
 class DayPicker(QWidget):
     def __init__(self):
@@ -594,6 +618,7 @@ class Popup(QDialog):
             # noinspection PyTypeChecker
             class_layout: QFormLayout = self.stack.currentWidget().layout()
             self.name_edit.setText(self.event_name)
+            self.name_edit.setDisabled(True)
             self.color_picker.setCurrentColor(to_qcolor(self.data["color"]))
             if event_type in ["class", "recurring event"]:
                 self.start_date_model.content = QDateTime(to_qdate(self.data["start"]))
@@ -612,7 +637,7 @@ class Popup(QDialog):
                 self.recurring_event_time_picker.set_time(to_qtime(self.data["time"]))
             if event_type in ["one time event", "one time class event"]:
                 date_time = QDateTime()
-                date_time.setDate(to_qdate(self.data["data"]))
+                date_time.setDate(to_qdate(self.data["date"]))
                 date_time.setTime(to_qtime(self.data["time"]))
                 self.event_date_model.content = date_time
             if event_type == "one time class event":
@@ -884,9 +909,9 @@ class Popup(QDialog):
                 error.setStandardButtons(error.Apply | error.Cancel)
                 result = error.exec_()
                 if result == error.Apply:
-                    if self.event_type.text() == "One Time Class Event":
-                        to_overwrite = self.schedule.schedule[self.get_name()]
-                        if to_overwrite["type"] == "class":
+                    to_overwrite = self.schedule.schedule[self.get_name()]
+                    if to_overwrite["type"] == "class":
+                        if self.event_type.text() == "One Time Class Event":
                             if self.class_picker.text() == self.get_name():
                                 error = QMessageBox()
                                 error.setText("Cannot overwrite a class with a one time class event for that class.\n"
@@ -898,6 +923,7 @@ class Popup(QDialog):
                     self.reject()
                 elif result == error.Cancel:
                     self.name_edit.setFocus()
+                    return
             self.schedule.edit_event(self.get_data())
             self.reject()
         super(Popup, self).accept()

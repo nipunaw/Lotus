@@ -29,10 +29,6 @@ class UpcomingClasses(QWidget):
         self.layout.setAlignment(Qt.AlignTop)
         self.layout.setContentsMargins(0, 20, 0, 0)
         # self.setStyleSheet("background: black")
-        self.no_schedule_text = QtWidgets.QLabel()
-        self.no_schedule_text.setText("No upcoming classes.")
-        self.no_schedule_text.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
-        self.no_schedule_text.setStyleSheet("font-size: 15px; font-family: Lato")
 
         self.scope = 0
         self.scopes = ["Day", "Week", "Month"]
@@ -72,6 +68,7 @@ class UpcomingClasses(QWidget):
         self.scope_viewer = QtWidgets.QGridLayout()
         self.scope_viewer.setAlignment(Qt.AlignTop | Qt.AlignCenter)
         self.update_scope_viewer()
+        self.schedule.updated.connect(self.update_scope_viewer)
 
         middle_layout = QtWidgets.QVBoxLayout()
         middle_layout.setAlignment(Qt.AlignTop | Qt.AlignVCenter)
@@ -122,29 +119,60 @@ class UpcomingClasses(QWidget):
         parent.setText(self.scopes[self.scope])
         self.update_date(0)
 
+    def get_no_events_text(self):
+        no_schedule_text = QtWidgets.QLabel()
+        no_schedule_text.setText("No upcoming events.")
+        no_schedule_text.setContentsMargins(10, 10, 10, 10)
+        no_schedule_text.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        no_schedule_text.setStyleSheet("font-size: 15px; font-family: Lato")
+        return no_schedule_text
+
     def update_scope_viewer(self):
         clear_layout(self.scope_viewer, [self.calendar, self.stack])
         if self.scope == 0:
+            widget = QWidget(self)
+            widget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+
             button_layout = QtWidgets.QVBoxLayout()
-            for button, _, _, _ in self.schedule.get_event_buttons(self.viewing_date):
-                button_layout.addWidget(button)
-            self.scope_viewer.addLayout(button_layout, 0, 0, self.scope_viewer.rowCount(), self.scope_viewer.columnCount())
-        elif self.scope == 1:
-            layout = QtWidgets.QGridLayout()
-            layout.setSpacing(10)
-            layout.setContentsMargins(0, 0, 0, 0)
-            layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+
+            button_layout.setSpacing(10)
+            button_layout.setContentsMargins(10, 10, 10, 10)
+            button_layout.setAlignment(Qt.AlignTop | Qt.AlignVCenter)
+            widget.setLayout(button_layout)
             scroll_area = QtWidgets.QScrollArea()
             scroll_area.setWidgetResizable(True)
-            scroll_area.setWidget(layout.widget())
-            scroll_area.setLayout(layout)
-            scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-            scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+            scroll_area.setWidget(widget)
+            scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+            scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+            scroll_area.setLineWidth(0)
+
+            buttons = self.schedule.get_event_buttons(self.viewing_date)
+            if len(buttons) == 0:
+                self.scope_viewer.addWidget(self.get_no_events_text(), 0, 0, self.scope_viewer.rowCount(), self.scope_viewer.columnCount())
+            else:
+                for button, _, _, _ in buttons:
+                    button_layout.addWidget(button)
+                self.scope_viewer.addWidget(scroll_area, 0, 0, self.scope_viewer.rowCount(), self.scope_viewer.columnCount())
+        elif self.scope == 1:
+            widget = QWidget(self)
+            widget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+            layout = QtWidgets.QGridLayout()
+            layout.setSpacing(10)
+            layout.setContentsMargins(5, 5, 5, 5)
+            layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            widget.setLayout(layout)
+            scroll_area = QtWidgets.QScrollArea()
+            scroll_area.setWidgetResizable(True)
+            scroll_area.setWidget(widget)
+            scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+            scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+            scroll_area.setLineWidth(0)
             start_date, end_date = self.get_first_and_last_day_of_week(self.viewing_date)
             week = []
             while start_date <= end_date:
                 week.append(start_date)
                 start_date = start_date.addDays(1)
+            days_without_events = []
             for i, (name, date) in enumerate(zip(self.days, week)):
                 buttons = self.schedule.get_event_buttons(date)
                 if len(buttons) > 0:
@@ -153,6 +181,11 @@ class UpcomingClasses(QWidget):
                     layout.addWidget(name_label, 0, i)
                     for j, (button, _, _, _) in enumerate(buttons):
                         layout.addWidget(button, j+1, i)
+                else:
+                    days_without_events.append(name)
+            if len(days_without_events) == 7:
+                self.scope_viewer.addWidget(self.get_no_events_text())
+            else:
                 self.scope_viewer.addWidget(scroll_area)
         elif self.scope == 2:
             if self.calendar.day_viewer is not None:
@@ -253,7 +286,7 @@ class UIHubWindow(QWidget):
         self.user_welcome.setStyleSheet("font-family: Lato")
 
     def time_date_display(self):
-        self.time.setText(QtCore.QTime.currentTime().toString())
+        self.time.setText(QtCore.QTime.currentTime().toString("h:mm:ss ap"))
         self.date.setText(QtCore.QDate.currentDate().toString())
 
     def schedule_ui(self):
@@ -434,48 +467,3 @@ class UIHubWindow(QWidget):
         self.setLayout(self.windowLayout)
 
         self.animation_ui(3)
-
-    # def grid_layout(self):
-    #         ########### Menu Bar ###########
-    #         self.menu_ui()
-    #
-    #         ########### Set-Up Grid Layout ###########
-    #         # initialize grid layout
-    #         self.horizontalGroupBox = QtWidgets.QHBoxLayout()
-    #         self.layout = QtWidgets.QGridLayout()
-    #
-    #         self.upcoming_classes = UpcomingClasses(self.schedule)
-    #
-    #         # add buttons to layout
-    #         self.layout.addWidget(self.menu_bar, 0,0,1,4)
-    #         self.layout.addWidget(self.user_welcome, 0, 1)
-    #         self.layout.addWidget(self.logo_black, 0, 0)
-    #         self.layout.addWidget(self.settings_button, 0, 3, Qt.AlignRight)
-    #         self.layout.addWidget(self.schedule_background, 1, 0, 6, 3) # Qt.AlignLeft
-    #         self.layout.addWidget(self.time, 1, 1)
-    #         self.layout.addWidget(self.date, 1, 1)
-    #         self.layout.addWidget(self.upcoming_classes, 3, 0, 4, 1) ## TODO: Add boolean logic
-    #         self.layout.addWidget(self.new_note_button, 1, 3)
-    #         self.layout.addWidget(self.new_note_text, 2, 3)
-    #         self.layout.addWidget(self.schedule_button, 3, 3) # Qt.AlignHCenter
-    #         self.layout.addWidget(self.schedule_text, 4, 3)
-    #         self.layout.addWidget(self.previous_notes_button, 5, 3)
-    #         self.layout.addWidget(self.previous_notes_text, 6, 3)
-    #
-    #         # self.layout.setColumnStretch(0, 0)
-    #         # self.layout.setColumnStretch(1, 0)
-    #         # self.layout.setColumnStretch(2, 0)
-    #
-    #         self.layout.setHorizontalSpacing(30)
-    #         self.layout.setVerticalSpacing(5)
-    #         self.layout.setContentsMargins(0, 0, 0, 0)
-    #
-    #         # finish initializing grid layout
-    #         self.horizontalGroupBox.setLayout(self.layout)
-    #         self.windowLayout = QtWidgets.QVBoxLayout()
-    #         self.windowLayout.addWidget(self.horizontalGroupBox)
-    #         self.windowLayout.setAlignment(Qt.AlignHCenter)
-    #
-    #         self.setLayout(self.windowLayout)
-    #
-    #         self.animation_ui(3)
